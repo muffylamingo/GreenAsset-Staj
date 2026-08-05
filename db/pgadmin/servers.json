@@ -1,0 +1,14 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "GreenAsset (PostGIS)",
+      "Group": "Sunucular",
+      "Host": "db",
+      "Port": 5432,
+      "MaintenanceDB": "greenasset",
+      "Username": "greenasset",
+      "SSLMode": "prefer",
+      "Comment": "Docker ağı içindeki PostGIS veritabanı. Şifre .env dosyasındaki POSTGRES_PASSWORD."
+    }
+  }
+}

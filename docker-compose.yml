@@ -1,0 +1,98 @@
+# ============================================================
+#  GreenAsset — Docker Compose
+#  Kullanım:  docker compose up -d
+#  Servisler: db (PostGIS) · pgadmin · backend (FastAPI)
+# ============================================================
+
+services:
+  # ----------------------------------------------------------
+  # 1) VERİTABANI — PostgreSQL 16 + PostGIS 3.4
+  # ----------------------------------------------------------
+  db:
+    image: postgis/postgis:16-3.4
+    container_name: greenasset-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      # Dışarıdan (DBeaver, pgAdmin masaüstü) bağlanabilmek için
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      # Named volume: container silinse bile veri kalır
+      - postgres_data:/var/lib/postgresql/data
+      # Bu klasördeki .sql dosyaları İLK KURULUMDA otomatik çalışır
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      # "DB hazır mı?" kontrolü — backend bunu bekleyecek
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - greenasset-net
+
+  # ----------------------------------------------------------
+  # 2) pgAdmin — tarayıcıdan veritabanı yönetimi
+  #    http://localhost:5050
+  # ----------------------------------------------------------
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: greenasset-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
+      # Tek kullanıcılı mod — her açılışta master parola sormasın
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+    ports:
+      - "${PGADMIN_PORT:-5050}:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+      # Sunucu bağlantısı hazır tanımlı gelsin (elle eklemeye gerek kalmaz)
+      - ./db/pgadmin/servers.json:/pgadmin4/servers.json:ro
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - greenasset-net
+
+  # ----------------------------------------------------------
+  # 3) BACKEND — FastAPI
+  #    http://localhost:8000/docs
+  # ----------------------------------------------------------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: greenasset-backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    volumes:
+      # Geliştirme kolaylığı: kodu değiştir → uvicorn otomatik yeniden başlar
+      - ./backend:/app
+    depends_on:
+      db:
+        condition: service_healthy
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    networks:
+      - greenasset-net
+
+  # ----------------------------------------------------------
+  # 4) FRONTEND — Aşama 6'da eklenecek (şimdilik "npm run dev")
+  # ----------------------------------------------------------
+
+volumes:
+  postgres_data:
+  pgadmin_data:
+
+networks:
+  greenasset-net:
+    driver: bridge

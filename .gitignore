@@ -1,0 +1,42 @@
+# --- Ortam değişkenleri (ASLA commit'lenmez) ---
+.env
+.env.local
+.env.*.local
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+htmlcov/
+.coverage
+
+# --- Node / Frontend ---
+node_modules/
+dist/
+dist-ssr/
+.vite/
+*.local
+
+# --- Editör / IDE ---
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp
+
+# --- İşletim sistemi ---
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- Docker / veri ---
+pgdata/
+*.dump
+
+# --- Loglar ---
+*.log
+npm-debug.log*
