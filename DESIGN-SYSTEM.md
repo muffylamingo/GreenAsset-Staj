@@ -31,27 +31,32 @@ Böylece kontrast hataları baştan engellenir.
 | `error-container` | `#FFDAD6` | Hata arka planı |
 | `on-error-container` | `#93000A` | |
 
-### Yüzeyler (açık tema)
+### Yüzeyler — export'tan SAPMA (kullanıcı geri bildirimi)
 
-| Token | Hex |
-|---|---|
-| `background` / `surface` / `surface-bright` | `#F6FBF2` |
-| `surface-container-lowest` | `#FFFFFF` |
-| `surface-container-low` | `#F0F5EC` |
-| `surface-container` | `#EAEFE6` |
-| `surface-container-high` | `#E4EAE1` |
-| `surface-container-highest` / `surface-variant` | `#DFE4DB` |
-| `surface-dim` | `#D6DCD3` |
-| `on-surface` / `on-background` | `#181D17` |
-| `on-surface-variant` | `#3F493F` |
-| `outline` | `#6F7A6E` |
-| `outline-variant` | `#BECABC` |
-| `inverse-surface` | `#2C322C` |
-| `inverse-on-surface` | `#EDF2E9` |
-| `inverse-primary` / `primary-fixed-dim` | `#79DB8D` |
+Stitch'in orijinal rampasında basamaklar kanal başına **~5-6 birimdi**; göz bunu
+ayırt edemiyor, kartlar zeminden kopmuyordu. Basamakları **~7-11 birime** açtık ve
+zemini biraz koyulaştırdık ki beyaz kartlar öne çıksın.
 
-> Koyu tema `class` stratejisiyle çalışacak (`darkMode: "class"`).
-> Koyu yüzeyler için `inverse-surface` ailesi ve `primary-fixed-dim` kullanılıyor.
+| Token | Açık tema | Koyu tema |
+|---|---|---|
+| `surface-container-lowest` | `#FFFFFF` | `#080B07` |
+| `surface-container-low` | `#F8FBF5` | `#161B15` |
+| **`background` / `surface`** | **`#EFF4EA`** | **`#0E120D`** |
+| `surface-container` | `#E8EEE2` | `#1F251D` |
+| `surface-container-high` | `#DEE6D7` | `#2A3128` |
+| `surface-container-highest` | `#D3DCCB` | `#363E33` |
+| `surface-bright` | `#FDFFFA` | `#414A3E` |
+| `surface-dim` | `#CBD5C3` | `#080B07` |
+| `on-surface` | `#161B15` | `#E3E8DF` |
+| `on-surface-variant` | `#3D473C` | `#C3CBBE` |
+| `outline` | `#6B766A` | `#8D968A` |
+| `outline-variant` | `#B4C2B0` | `#4A5347` |
+
+Basamak farkları — açık: `7 · 9 · 7 · 10 · 11` · koyu: `6 · 8 · 9 · 11 · 12`
+
+> Koyu tema `class` stratejisiyle: `<html class="dark">`.
+> Token **adları** iki temada aynı, sadece değerleri değişiyor — bu yüzden
+> bileşen kodunda tek bir `dark:` yazmaya gerek kalmıyor.
 
 ---
 
@@ -79,18 +84,29 @@ metaforu (yeşil-sarı-kırmızı) evrensel olarak okunuyor.
 
 ## Tipografi
 
-**Font:** Inter (400 / 500 / 600 / 700 / 900)
+İki font kullanılıyor — ikisi de `@fontsource` ile self-host (CDN bağımlılığı yok):
 
-| Token | Boyut | Satır | Ağırlık | Nerede |
-|---|---|---|---|---|
-| `display` | 32px | 1.2 | 700 | KPI sayıları |
-| `headline-lg` | 24px | 1.25 | 600 | Sayfa başlığı |
-| `headline-md` | 20px | 1.25 | 600 | Panel başlığı |
-| `body-lg` | 16px | 1.4 | 400 | |
-| `body-md` | 14px | 1.4 | 400 | Varsayılan gövde |
-| `body-sm` | 12px | 1.3 | 400 | Yardım metni |
-| `label-md` | 12px | 1.0 | 600 | Etiket, buton (`letter-spacing: .02em`) |
-| `data-tabular` | 13px | 1.2 | 500 | Koordinat, sayı, tablo hücresi |
+| Rol | Font | Ağırlıklar | Neden |
+|---|---|---|---|
+| **Arayüz** | **Plus Jakarta Sans** | 400/500/600/700/800 | Geometrik ve canlı; Inter'den daha karakterli ama 12px'te bile okunaklı |
+| **Veri** | **JetBrains Mono** | 400/500 | Koordinat ve sayılar; sabit genişlik sayesinde tablo sütunlarında rakamlar alt alta hizalanır |
+
+> Export'ta font Inter'di; kullanıcı "biraz daha canlı" istediği için değiştirildi.
+> Monospace veri fontu zaten tasarımda isteniyordu (koordinatlar için).
+
+| Token | Boyut | Satır | Ağırlık | Font | Nerede |
+|---|---|---|---|---|---|
+| `display` | 32px | 1.2 | 700 | sans | KPI sayıları |
+| `headline-lg` | 24px | 1.25 | 600 | sans | Sayfa başlığı |
+| `headline-md` | 20px | 1.25 | 600 | sans | Panel başlığı |
+| `body-lg` | 16px | 1.4 | 400 | sans | |
+| `body-md` | 14px | 1.4 | 400 | sans | Varsayılan gövde |
+| `body-sm` | 12px | 1.3 | 400 | sans | Yardım metni |
+| `label-md` | 12px | 1.0 | **700** | sans | Etiket, buton (`ls .02em`) |
+| `data-tabular` | 13px | 1.2 | 500 | **mono** | Koordinat, sayı, tablo hücresi |
+
+Yardımcı sınıflar: `.tabular` (mono + tabular-nums) · `.nums` (sadece tabular-nums,
+sans fontla KPI sayıları için)
 
 ---
 

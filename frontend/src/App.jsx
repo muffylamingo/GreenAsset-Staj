@@ -96,16 +96,39 @@ function App() {
 
         {/* Yüzey katmanları */}
         <section className="mb-8">
-          <h2 className="mb-4 text-headline-md">Yüzey katmanları</h2>
-          <div className="flex flex-wrap gap-stack-gap">
+          <h2 className="mb-1 text-headline-md">Yüzey katmanları</h2>
+          <p className="mb-4 text-body-sm text-on-surface-variant">
+            Basamaklar kanal başına ~5 birimden ~10 birime açıldı — kartlar artık
+            zeminden ayrılıyor
+          </p>
+
+          {/* Kenarlıksız: sadece renk farkıyla ayrılıyorlar mı? */}
+          <div className="mb-4 flex flex-wrap gap-stack-gap">
             {SURFACES.map(([ad, sinif]) => (
               <div
                 key={ad}
-                className={`flex h-20 w-44 items-end rounded-lg border border-outline-variant p-component-padding ${sinif}`}
+                className={`flex h-20 w-44 items-end rounded-lg p-component-padding ${sinif}`}
               >
                 <span className="text-body-sm text-on-surface-variant">{ad}</span>
               </div>
             ))}
+          </div>
+
+          {/* Gerçek kullanım: zemin → kart → kart içinde öğe */}
+          <div className="rounded-xl bg-surface-container p-gutter">
+            <p className="mb-3 text-label-md text-on-surface-variant">
+              GERÇEK YERLEŞİM — zemin üstünde kart, kart içinde öğe
+            </p>
+            <div className="rounded-xl bg-surface-container-lowest p-gutter shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
+              <p className="mb-1 text-headline-md">Çınar #0042</p>
+              <p className="tabular mb-3 text-data-tabular text-on-surface-variant">
+                41.10500, 29.02700
+              </p>
+              <div className="flex items-center gap-2 rounded-lg bg-surface-container-high px-3 py-2">
+                <Icon name="location_on" className="text-[18px] text-on-surface-variant" />
+                <span className="text-body-sm">Sarıyer / İstanbul</span>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -146,18 +169,31 @@ function App() {
 
         {/* Tipografi */}
         <section className="mb-8">
-          <h2 className="mb-4 text-headline-md">Tipografi</h2>
-          <div className="space-y-2 rounded-xl border border-outline-variant bg-surface-container-lowest p-gutter">
-            <p className="text-display">display 32/700</p>
-            <p className="text-headline-lg">headline-lg 24/600</p>
-            <p className="text-headline-md">headline-md 20/600</p>
-            <p className="text-body-lg">body-lg 16/400</p>
-            <p className="text-body-md">body-md 14/400</p>
-            <p className="text-body-sm text-on-surface-variant">body-sm 12/400</p>
-            <p className="text-label-md">LABEL-MD 12/600</p>
-            <p className="tabular text-data-tabular">
-              data-tabular 13/500 — 41.10500, 29.02700
+          <h2 className="mb-1 text-headline-md">Tipografi</h2>
+          <p className="mb-4 text-body-sm text-on-surface-variant">
+            Arayüz: Plus Jakarta Sans · Veri: JetBrains Mono
+          </p>
+          <div className="space-y-2 rounded-xl bg-surface-container-lowest p-gutter">
+            <p className="text-display">display 32/700 — Akıllı Şehir</p>
+            <p className="text-headline-lg">headline-lg 24/600 — Varlık Yönetimi</p>
+            <p className="text-headline-md">headline-md 20/600 — Yeni Varlık Ekle</p>
+            <p className="text-body-lg">body-lg 16/400 — Şehirdeki ağaçları takip et</p>
+            <p className="text-body-md">body-md 14/400 — Haritaya tıkla, koordinat dolsun</p>
+            <p className="text-body-sm text-on-surface-variant">
+              body-sm 12/400 — İsim boş olamaz
             </p>
+            <p className="text-label-md">LABEL-MD 12/700 — KOORDİNATLAR</p>
+            <div className="border-t border-outline-variant pt-2">
+              <p className="tabular text-data-tabular">
+                41.10500, 29.02700 · 1475 varlık · %52
+              </p>
+              <p className="tabular text-data-tabular">
+                40.99000, 29.02700 · 0334 varlık · %07
+              </p>
+              <p className="mt-1 text-body-sm text-on-surface-variant">
+                ↑ rakamlar alt alta hizalı — sabit genişlikli font
+              </p>
+            </div>
           </div>
         </section>
 

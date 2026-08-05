@@ -52,22 +52,27 @@
   --color-error-container: #ffdad6;
   --color-on-error-container: #93000a;
 
-  /* --- Yüzeyler --- */
-  --color-background: #f6fbf2;
-  --color-on-background: #181d17;
-  --color-surface: #f6fbf2;
-  --color-surface-bright: #f6fbf2;
-  --color-surface-dim: #d6dcd3;
+  /* --- Yüzeyler ---
+     Stitch'in orijinal rampasında basamaklar kanal başına ~5-6 birimdi;
+     göz bunu ayırt edemiyordu, kartlar zeminden kopmuyordu.
+     Basamakları ~8-11 birime açtık ve zemini biraz koyulaştırdık ki
+     beyaz kartlar öne çıksın. Rampa (açıktan koyuya):
+       #FFFFFF → #F8FBF5 → [#EFF4EA zemin] → #E8EEE2 → #DEE6D7 → #D3DCCB   */
+  --color-background: #eff4ea;
+  --color-on-background: #161b15;
+  --color-surface: #eff4ea;
+  --color-surface-bright: #fdfffa;
+  --color-surface-dim: #cbd5c3;
   --color-surface-container-lowest: #ffffff;
-  --color-surface-container-low: #f0f5ec;
-  --color-surface-container: #eaefe6;
-  --color-surface-container-high: #e4eae1;
-  --color-surface-container-highest: #dfe4db;
-  --color-surface-variant: #dfe4db;
-  --color-on-surface: #181d17;
-  --color-on-surface-variant: #3f493f;
-  --color-outline: #6f7a6e;
-  --color-outline-variant: #becabc;
+  --color-surface-container-low: #f8fbf5;
+  --color-surface-container: #e8eee2;
+  --color-surface-container-high: #dee6d7;
+  --color-surface-container-highest: #d3dccb;
+  --color-surface-variant: #dee6d7;
+  --color-on-surface: #161b15;
+  --color-on-surface-variant: #3d473c;
+  --color-outline: #6b766a;
+  --color-outline-variant: #b4c2b0;
   --color-inverse-surface: #2c322c;
   --color-inverse-on-surface: #edf2e9;
 
@@ -78,8 +83,13 @@
   --color-status-maintenance: #f59e0b;
   --color-status-broken: #ba1a1a;
 
-  /* --- Tipografi --- */
-  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  /* --- Tipografi ---
+     Arayüz: Plus Jakarta Sans — geometrik ve canlı, Inter'den daha karakterli
+     ama 12-13px'te bile okunaklı.
+     Veri: JetBrains Mono — koordinatlar ve sayılar için; sabit genişlik
+     sayesinde tablo sütunlarında rakamlar alt alta hizalanır. */
+  --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Code', monospace;
 
   --text-display: 32px;
   --text-display--line-height: 1.2;
@@ -109,10 +119,11 @@
   --text-label-md: 12px;
   --text-label-md--line-height: 1;
   --text-label-md--letter-spacing: 0.02em;
-  --text-label-md--font-weight: 600;
+  --text-label-md--font-weight: 700;
 
   --text-data-tabular: 13px;
   --text-data-tabular--line-height: 1.2;
+  --text-data-tabular--letter-spacing: -0.02em;
   --text-data-tabular--font-weight: 500;
 
   /* --- Ölçüler --- */
@@ -136,21 +147,24 @@
    Böylece bileşen kodunda tek bir "dark:" bile yazmak gerekmez.
    ========================================================================== */
 .dark {
-  --color-background: #101510;
-  --color-on-background: #e1e5dd;
-  --color-surface: #101510;
-  --color-surface-bright: #363b35;
-  --color-surface-dim: #101510;
-  --color-surface-container-lowest: #0b0f0a;
-  --color-surface-container-low: #181d17;
-  --color-surface-container: #1c211b;
-  --color-surface-container-high: #262b25;
-  --color-surface-container-highest: #313630;
-  --color-surface-variant: #424940;
-  --color-on-surface: #e1e5dd;
-  --color-on-surface-variant: #c1c9bd;
-  --color-outline: #8b9389;
-  --color-outline-variant: #424940;
+  /* Koyu temada basamak farkları daha da kritik: göz karanlıkta ton farkını
+     daha zor ayırt eder. Rampa (koyudan açığa):
+       #080B07 → [#0E120D zemin] → #161B15 → #1F251D → #2A3128 → #363E33 */
+  --color-background: #0e120d;
+  --color-on-background: #e3e8df;
+  --color-surface: #0e120d;
+  --color-surface-bright: #414a3e;
+  --color-surface-dim: #080b07;
+  --color-surface-container-lowest: #080b07;
+  --color-surface-container-low: #161b15;
+  --color-surface-container: #1f251d;
+  --color-surface-container-high: #2a3128;
+  --color-surface-container-highest: #363e33;
+  --color-surface-variant: #414a3e;
+  --color-on-surface: #e3e8df;
+  --color-on-surface-variant: #c3cbbe;
+  --color-outline: #8d968a;
+  --color-outline-variant: #4a5347;
   --color-inverse-surface: #e1e5dd;
   --color-inverse-on-surface: #2c322c;
 
@@ -189,8 +203,15 @@
     color: var(--color-on-background);
   }
 
-  /* Koordinat ve sayı sütunları hizalı görünsün */
+  /* Koordinat ve sayı sütunları hizalı görünsün.
+     JetBrains Mono zaten sabit genişlikte; tabular-nums ise sans font
+     kullanılan yerlerde (KPI sayıları gibi) rakamları hizalar. */
   .tabular {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .nums {
     font-variant-numeric: tabular-nums;
   }
 }
