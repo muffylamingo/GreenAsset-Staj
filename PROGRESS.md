@@ -8,7 +8,7 @@
 ## Genel Durum
 
 ```
-████████████████████░░░░░░░░░░░░░░░░░░░░  52%
+████████████████████████████░░░░░░░░░░░░  70%
 ```
 
 | # | Aşama | Ağırlık | Durum | Tamamlanma |
@@ -16,12 +16,12 @@
 | 0 | Hazırlık & Git | 5% | ✅ Bitti | `██████████` 100% |
 | 1 | Veritabanı & Docker | 15% | ✅ Bitti | `██████████` 100% |
 | 2 | Backend REST API | 25% | ✅ Bitti | `██████████` 100% |
-| 3 | Frontend — form & tablo | 20% | 🟡 Devam ediyor | `███░░░░░░░` 35% |
+| 3 | Frontend — form & tablo | 20% | ✅ Bitti | `██████████` 100% |
 | 4 | Harita entegrasyonu | 15% | ⚪ Başlanmadı | `░░░░░░░░░░` 0% |
 | 5 | Analiz & raporlama | 15% | ⚪ Başlanmadı | `░░░░░░░░░░` 0% |
 | 6 | Cila & teslim | 5% | ⚪ Başlanmadı | `░░░░░░░░░░` 0% |
 
-**Hesap:** 5 + 15 + 25 + (20 × 0.35) = **52%**
+**Hesap:** 5 + 15 + 25 + 20 = **70%**
 
 ---
 
@@ -84,39 +84,62 @@
 
 ---
 
-## Aşama 3 — Frontend: form & tablo 🟡 35%
+## Aşama 3 — Frontend: form & tablo ✅ 100%
 
-### Bitti
+### Altyapı
 - [x] Vite + React 19 kurulumu
 - [x] Tailwind v4 + Material Design 3 token'ları (46 renk, 8 tipografi, 6 ölçü)
 - [x] Açık + koyu tema (token adları sabit, değerler değişiyor)
+- [x] Yüzey rampası açıldı (kullanıcı geri bildirimi)
+- [x] Plus Jakarta Sans + JetBrains Mono, self-host
 - [x] `statusColors.js` — durum renkleri TEK KAYNAK
 - [x] `Icon.jsx` — 35 ikon inline SVG (3.96 MB font yerine ~8 KB)
-- [x] Inter fontu self-host (`@fontsource`)
 - [x] Vite proxy `/api → :8000` (geliştirmede CORS yok)
-- [x] Token doğrulama ekranı — tarayıcıda ölçüldü
 
-### Kalan
-- [ ] **i18n kurulumu** — `react-i18next`, `tr.json` / `en.json`, dil anahtarı
-- [ ] **API katmanı** — axios client + endpoint fonksiyonları
-- [ ] **React Query** — `useAssets`, `useDistricts`, `useCreateAsset` hook'ları
-- [ ] **Uygulama iskeleti** — sol ikon rayı + sayfa yönlendirme
-- [ ] **AssetForm** — React Hook Form + Zod
-  - [ ] İsim boş olamaz (trim kontrolü dahil)
-  - [ ] Enlem −90..90, boylam −180..180
-  - [ ] Tip seçimi (5 ikonlu segment)
-  - [ ] Durum seçimi (renkli noktalı radio)
-  - [ ] "Use Current" — tarayıcı geolocation
-  - [ ] Not alanı
-- [ ] **AssetTable**
-  - [ ] Sütunlar: ad, tip, durum rozeti, koordinat, ilçe, tarih, aksiyonlar
-  - [ ] Sıralanabilir başlıklar
-  - [ ] Filtre chip'leri + "Tümünü temizle"
-  - [ ] Toplu seçim + alt aksiyon çubuğu
-  - [ ] Sayfalama
-- [ ] **UI bileşenleri** — Button, Modal, Toast, Badge, Skeleton
-- [ ] **Durum ekranları** — yükleniyor (skeleton), boş, hata
-- [ ] Silmeden önce onay modalı
+### i18n
+- [x] `react-i18next`, `tr.json` / `en.json` (~90 anahtar)
+- [x] Dil anahtarı + localStorage'a kayıt + `<html lang>` güncellemesi
+
+### Veri katmanı
+- [x] Axios client + hata çevirici (FastAPI 422 → okunabilir mesaj)
+- [x] `assets.js` / `districts.js` — API sözleşmesini bilen tek yer
+- [x] React Query hook'ları + mutation sonrası otomatik tazeleme
+
+### AssetForm (React Hook Form + Zod)
+- [x] İsim boş olamaz — sadece boşluk girişi de reddediliyor
+- [x] Enlem −90..90, boylam −180..180, "sayı olmalı" kontrolü
+- [x] **Virgüllü ondalık desteği** — `41,105` → `41.105`
+- [x] Tip seçimi (5 ikonlu segment kontrolü)
+- [x] Durum seçimi (renkli noktalı radio kartları)
+- [x] "Konumumu kullan" — tarayıcı geolocation
+- [x] Not alanı, düzenleme modu, ilçe bilgisi gösterimi
+
+### AssetTable
+- [x] Sütunlar: ad, tip, durum rozeti, koordinat, ilçe, tarih, aksiyonlar
+- [x] Sıralanabilir başlıklar (ad / tip / durum / tarih)
+- [x] Arama + tip/durum chip'leri + ilçe seçici + "Tümünü temizle"
+- [x] Toplu seçim + yüzen aksiyon çubuğu (durum değiştir / sil)
+- [x] Sayfalama (10/25/50/100)
+- [x] Silmeden önce onay modalı (Esc, odak yönetimi, aria-modal)
+
+### UI bileşenleri ve durum ekranları
+- [x] Button (5 varyant), StatusBadge, Modal
+- [x] TableSkeleton / EmptyState / ErrorState
+- [x] Toast bildirimleri
+
+### Tarayıcıda doğrulandı
+| Test | Sonuç |
+|---|---|
+| Boş form gönderimi | 3 alan hatası, doğru mesajlar |
+| `"   "` isim | "İsim boş olamaz" |
+| `"abc"` enlem | "Sayı olmalı" |
+| `"999"` boylam | Aralık hatası |
+| `41,105` / `29,027` kayıt | `41.105` olarak kaydedildi, ilçe **Sarıyer** |
+| Kayıt sonrası | Sayaç 1475→1476, panel kapandı |
+| Silme modalı | Odak "Sil"e geçti, `aria-modal="true"` |
+| Silme sonrası | Boş durum ekranı, sayaç 1475 |
+| Toplu durum değiştirme | Toast: "1 varlığın durumu değiştirildi" |
+| Dil değiştirme | `lang="en"`, tüm metinler İngilizce, tercih kaydedildi |
 
 ---
 

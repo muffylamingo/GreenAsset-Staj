@@ -1,0 +1,124 @@
+{
+  "app": {
+    "name": "GreenAsset",
+    "tagline": "Smart City Asset Management"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "map": "Map",
+    "assets": "Assets",
+    "reports": "Reports",
+    "settings": "Settings",
+    "toggleTheme": "Toggle theme",
+    "toggleLanguage": "Change language"
+  },
+  "assetType": {
+    "TREE": "Tree",
+    "BENCH": "Bench",
+    "POLE": "Street Lamp",
+    "TRASH_BIN": "Trash Bin",
+    "PLAYGROUND": "Playground"
+  },
+  "status": {
+    "GOOD": "Good",
+    "NEEDS_MAINTENANCE": "Needs Maintenance",
+    "BROKEN": "Broken"
+  },
+  "form": {
+    "addTitle": "Add New Asset",
+    "editTitle": "Edit Asset",
+    "name": "Asset Name",
+    "namePlaceholder": "e.g. Oak Tree - Sector 4",
+    "type": "Asset Type",
+    "status": "Current Status",
+    "coordinates": "Coordinates",
+    "latitude": "Latitude",
+    "longitude": "Longitude",
+    "useCurrent": "Use current location",
+    "mapHint": "Click on the map to auto-fill coordinates",
+    "notes": "Additional Notes",
+    "notesPlaceholder": "Installation date, model details, etc.",
+    "save": "Save Asset",
+    "update": "Update",
+    "cancel": "Cancel",
+    "district": "District",
+    "districtAuto": "Determined automatically from coordinates"
+  },
+  "validation": {
+    "nameRequired": "Name cannot be empty",
+    "nameTooLong": "Name can be at most 120 characters",
+    "typeRequired": "Asset type is required",
+    "statusRequired": "Status is required",
+    "latRequired": "Latitude is required",
+    "lonRequired": "Longitude is required",
+    "latRange": "Latitude must be between -90 and 90",
+    "lonRange": "Longitude must be between -180 and 180",
+    "mustBeNumber": "Must be a number",
+    "notesTooLong": "Notes can be at most 1000 characters"
+  },
+  "table": {
+    "title": "Assets",
+    "recordCount": "{{count}} records",
+    "search": "Search assets...",
+    "addAsset": "Add Asset",
+    "name": "Name",
+    "type": "Type",
+    "status": "Status",
+    "coordinates": "Coordinates",
+    "district": "District",
+    "createdAt": "Created",
+    "actions": "Actions",
+    "edit": "Edit",
+    "delete": "Delete",
+    "showOnMap": "Show on map",
+    "selected": "{{count}} selected",
+    "changeStatus": "Change status",
+    "export": "Export",
+    "clearAll": "Clear all",
+    "rowsPerPage": "Rows per page",
+    "showing": "{{from}}-{{to}} of {{total}}",
+    "noDistrict": "—"
+  },
+  "filters": {
+    "all": "All",
+    "type": "Type",
+    "status": "Status",
+    "district": "District",
+    "allDistricts": "All districts",
+    "clear": "Clear filters"
+  },
+  "empty": {
+    "noAssets": "No assets yet",
+    "noAssetsHint": "Use the button above to add your first asset",
+    "noResults": "No assets match your filters",
+    "noResultsHint": "Try loosening the filters"
+  },
+  "errors": {
+    "loadFailed": "Failed to load data",
+    "saveFailed": "Failed to save",
+    "deleteFailed": "Failed to delete",
+    "networkError": "Cannot reach the server. Is the backend running?",
+    "retry": "Retry",
+    "geolocationUnsupported": "Your browser does not support geolocation",
+    "geolocationDenied": "Location permission denied"
+  },
+  "toast": {
+    "created": "{{name}} added",
+    "updated": "{{name}} updated",
+    "deleted": "{{name}} deleted",
+    "bulkStatusChanged": "Status changed for {{count}} assets",
+    "bulkDeleted": "{{count}} assets deleted"
+  },
+  "confirm": {
+    "deleteTitle": "Delete asset",
+    "deleteMessage": "\"{{name}}\" will be permanently deleted. This cannot be undone.",
+    "bulkDeleteTitle": "Delete selected assets",
+    "bulkDeleteMessage": "{{count}} assets will be permanently deleted. This cannot be undone.",
+    "confirm": "Delete",
+    "cancel": "Cancel"
+  },
+  "common": {
+    "loading": "Loading...",
+    "close": "Close"
+  }
+}

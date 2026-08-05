@@ -1,215 +1,144 @@
 import { useState } from 'react'
+import { Toaster } from 'react-hot-toast'
+import { useTranslation } from 'react-i18next'
+
+import AssetForm from './components/assets/AssetForm'
+import AssetTable from './components/assets/AssetTable'
 import Icon from './components/ui/Icon'
-import { ASSET_TYPES, STATUS_CLASSES, STATUS_HEX } from './theme/statusColors'
+import { useTheme } from './hooks/useTheme'
+import { dilDegistir } from './i18n'
 
 /**
- * GEÇİCİ EKRAN — tasarım token'larının doğru yüklendiğini doğrulamak için.
- * Aşama 3'ün gerçek ekranları (form + tablo) bunun yerine gelecek.
+ * Uygulama iskeleti.
+ *
+ * Yerleşim tasarımdan geliyor (docs/design/01-harita-ekrani.html):
+ *   sol ikon rayı (72px) + ana içerik + sağdan açılan panel (400px)
+ *
+ * Aşama 4'te "Harita" sekmesi eklenecek ve panel haritanın üzerine binecek.
  */
 
-// DİKKAT: Tailwind sınıf adlarını kaynak koddan METİN OLARAK tarar.
-// `bg-${degisken}` yazarsan o sınıf hiç üretilmez ve renk görünmez.
-// Bu yüzden sınıflar burada tam metin olarak duruyor.
-const SURFACES = [
-  ['surface-container-lowest', 'bg-surface-container-lowest'],
-  ['surface-container-low', 'bg-surface-container-low'],
-  ['surface-container', 'bg-surface-container'],
-  ['surface-container-high', 'bg-surface-container-high'],
-  ['surface-container-highest', 'bg-surface-container-highest'],
+const MENU = [
+  { anahtar: 'dashboard', icon: 'dashboard', hazir: false },
+  { anahtar: 'map', icon: 'map', hazir: false },
+  { anahtar: 'assets', icon: 'inventory_2', hazir: true },
+  { anahtar: 'reports', icon: 'analytics', hazir: false },
 ]
 
-const BRAND = [
-  ['primary', 'bg-primary text-on-primary'],
-  ['primary-container', 'bg-primary-container text-on-primary-container'],
-  ['secondary', 'bg-secondary text-on-secondary'],
-  ['secondary-container', 'bg-secondary-container text-on-secondary-container'],
-  ['tertiary', 'bg-tertiary text-on-tertiary'],
-  ['error', 'bg-error text-on-error'],
-]
+export default function App() {
+  const { t, i18n } = useTranslation()
+  const { koyu, temaDegistir } = useTheme()
 
-const NAV_ICONS = ['dashboard', 'map', 'inventory_2', 'analytics']
+  const [aktifSayfa, setAktifSayfa] = useState('assets')
+  const [panelAcik, setPanelAcik] = useState(false)
+  const [duzenlenen, setDuzenlenen] = useState(null)
 
-function App() {
-  const [dark, setDark] = useState(false)
+  const panelAc = (asset = null) => {
+    setDuzenlenen(asset)
+    setPanelAcik(true)
+  }
 
-  const toggleTheme = () => {
-    setDark((onceki) => {
-      const yeni = !onceki
-      document.documentElement.classList.toggle('dark', yeni)
-      return yeni
-    })
+  const panelKapat = () => {
+    setPanelAcik(false)
+    setDuzenlenen(null)
   }
 
   return (
-    <div className="min-h-screen bg-background text-on-background">
-      {/* Sol ikon rayı — tasarımdaki 72px */}
-      <nav className="fixed left-0 top-0 z-50 flex h-full w-nav-rail flex-col items-center border-r border-outline-variant bg-surface py-6">
+    <div className="flex h-screen overflow-hidden bg-background text-on-background">
+      {/* ---------- Sol ikon rayı ---------- */}
+      <nav className="flex w-nav-rail shrink-0 flex-col items-center border-r border-outline-variant bg-surface py-6">
         <div className="mb-8 flex h-10 w-10 items-center justify-center rounded-full bg-primary-container text-on-primary-container">
           <Icon name="eco" className="text-[24px]" />
         </div>
 
-        {NAV_ICONS.map((icon, i) => (
-          <a
-            key={icon}
-            href="#"
-            className={`relative flex w-full justify-center py-4 transition-colors hover:bg-surface-container-high ${
-              i === 1
-                ? "text-primary before:absolute before:left-0 before:h-8 before:w-1 before:rounded-r-full before:bg-primary before:content-['']"
-                : 'text-on-surface-variant'
-            }`}
-          >
-            <Icon name={icon} className="text-[24px]" />
-          </a>
-        ))}
+        <div className="flex w-full flex-col">
+          {MENU.map(({ anahtar, icon, hazir }) => {
+            const aktif = aktifSayfa === anahtar
+            return (
+              <button
+                key={anahtar}
+                onClick={() => hazir && setAktifSayfa(anahtar)}
+                disabled={!hazir}
+                title={hazir ? t(`nav.${anahtar}`) : `${t(`nav.${anahtar}`)} — yakında`}
+                aria-current={aktif ? 'page' : undefined}
+                className={`relative flex w-full justify-center py-4 transition-colors ${
+                  aktif
+                    ? "text-primary before:absolute before:left-0 before:h-8 before:w-1 before:rounded-r-full before:bg-primary before:content-['']"
+                    : hazir
+                      ? 'text-on-surface-variant hover:bg-surface-container-high'
+                      : 'text-on-surface-variant/30'
+                }`}
+              >
+                <Icon name={icon} filled={aktif} className="text-[24px]" />
+              </button>
+            )
+          })}
+        </div>
 
-        <button
-          onClick={toggleTheme}
-          className="mt-auto flex w-full justify-center py-4 text-on-surface-variant transition-colors hover:bg-surface-container-high"
-          title="Temayı değiştir"
-        >
-          <Icon name={dark ? 'light_mode' : 'dark_mode'} className="text-[24px]" />
-        </button>
+        <div className="mt-auto flex w-full flex-col">
+          <button
+            onClick={() => dilDegistir(i18n.language === 'tr' ? 'en' : 'tr')}
+            title={t('nav.toggleLanguage')}
+            className="flex w-full flex-col items-center gap-0.5 py-3 text-on-surface-variant transition-colors hover:bg-surface-container-high"
+          >
+            <Icon name="language" className="text-[22px]" />
+            <span className="text-[10px] font-bold uppercase">{i18n.language}</span>
+          </button>
+
+          <button
+            onClick={temaDegistir}
+            title={t('nav.toggleTheme')}
+            className="flex w-full justify-center py-4 text-on-surface-variant transition-colors hover:bg-surface-container-high"
+          >
+            <Icon name={koyu ? 'light_mode' : 'dark_mode'} className="text-[22px]" />
+          </button>
+        </div>
       </nav>
 
-      <main className="ml-nav-rail p-margin-page">
-        <header className="mb-8">
-          <h1 className="text-display text-on-surface">GreenAsset</h1>
-          <p className="text-body-md text-on-surface-variant">
-            Tasarım sistemi doğrulama ekranı — token'lar Stitch export'undan alındı
-          </p>
-        </header>
-
-        {/* Marka renkleri */}
-        <section className="mb-8">
-          <h2 className="mb-4 text-headline-md">Marka renkleri</h2>
-          <div className="flex flex-wrap gap-gutter">
-            {BRAND.map(([ad, siniflar]) => (
-              <div
-                key={ad}
-                className={`flex h-24 w-52 flex-col justify-end rounded-xl p-component-padding ${siniflar}`}
-              >
-                <span className="text-label-md">{ad}</span>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Yüzey katmanları */}
-        <section className="mb-8">
-          <h2 className="mb-1 text-headline-md">Yüzey katmanları</h2>
-          <p className="mb-4 text-body-sm text-on-surface-variant">
-            Basamaklar kanal başına ~5 birimden ~10 birime açıldı — kartlar artık
-            zeminden ayrılıyor
-          </p>
-
-          {/* Kenarlıksız: sadece renk farkıyla ayrılıyorlar mı? */}
-          <div className="mb-4 flex flex-wrap gap-stack-gap">
-            {SURFACES.map(([ad, sinif]) => (
-              <div
-                key={ad}
-                className={`flex h-20 w-44 items-end rounded-lg p-component-padding ${sinif}`}
-              >
-                <span className="text-body-sm text-on-surface-variant">{ad}</span>
-              </div>
-            ))}
-          </div>
-
-          {/* Gerçek kullanım: zemin → kart → kart içinde öğe */}
-          <div className="rounded-xl bg-surface-container p-gutter">
-            <p className="mb-3 text-label-md text-on-surface-variant">
-              GERÇEK YERLEŞİM — zemin üstünde kart, kart içinde öğe
-            </p>
-            <div className="rounded-xl bg-surface-container-lowest p-gutter shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
-              <p className="mb-1 text-headline-md">Çınar #0042</p>
-              <p className="tabular mb-3 text-data-tabular text-on-surface-variant">
-                41.10500, 29.02700
-              </p>
-              <div className="flex items-center gap-2 rounded-lg bg-surface-container-high px-3 py-2">
-                <Icon name="location_on" className="text-[18px] text-on-surface-variant" />
-                <span className="text-body-sm">Sarıyer / İstanbul</span>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Durum renkleri */}
-        <section className="mb-8">
-          <h2 className="mb-4 text-headline-md">Durum renkleri</h2>
-          <div className="flex flex-wrap items-center gap-gutter">
-            {Object.entries(STATUS_CLASSES).map(([durum, sinif]) => (
-              <span
-                key={durum}
-                className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-label-md ${sinif}`}
-              >
-                <span
-                  className="h-2 w-2 rounded-full"
-                  style={{ backgroundColor: STATUS_HEX[durum] }}
-                />
-                {durum}
-              </span>
-            ))}
-          </div>
-        </section>
-
-        {/* Varlık tipleri */}
-        <section className="mb-8">
-          <h2 className="mb-4 text-headline-md">Varlık tipleri</h2>
-          <div className="flex flex-wrap gap-stack-gap">
-            {Object.entries(ASSET_TYPES).map(([tip, { icon }]) => (
-              <div
-                key={tip}
-                className="flex w-28 flex-col items-center gap-2 rounded-xl border border-outline-variant bg-surface-container-lowest py-4 text-on-surface-variant"
-              >
-                <Icon name={icon} className="text-[24px]" />
-                <span className="text-body-sm">{tip}</span>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Tipografi */}
-        <section className="mb-8">
-          <h2 className="mb-1 text-headline-md">Tipografi</h2>
-          <p className="mb-4 text-body-sm text-on-surface-variant">
-            Arayüz: Plus Jakarta Sans · Veri: JetBrains Mono
-          </p>
-          <div className="space-y-2 rounded-xl bg-surface-container-lowest p-gutter">
-            <p className="text-display">display 32/700 — Akıllı Şehir</p>
-            <p className="text-headline-lg">headline-lg 24/600 — Varlık Yönetimi</p>
-            <p className="text-headline-md">headline-md 20/600 — Yeni Varlık Ekle</p>
-            <p className="text-body-lg">body-lg 16/400 — Şehirdeki ağaçları takip et</p>
-            <p className="text-body-md">body-md 14/400 — Haritaya tıkla, koordinat dolsun</p>
-            <p className="text-body-sm text-on-surface-variant">
-              body-sm 12/400 — İsim boş olamaz
-            </p>
-            <p className="text-label-md">LABEL-MD 12/700 — KOORDİNATLAR</p>
-            <div className="border-t border-outline-variant pt-2">
-              <p className="tabular text-data-tabular">
-                41.10500, 29.02700 · 1475 varlık · %52
-              </p>
-              <p className="tabular text-data-tabular">
-                40.99000, 29.02700 · 0334 varlık · %07
-              </p>
-              <p className="mt-1 text-body-sm text-on-surface-variant">
-                ↑ rakamlar alt alta hizalı — sabit genişlikli font
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* Ölçüler */}
-        <section className="mb-8">
-          <h2 className="mb-4 text-headline-md">Ölçü token'ları</h2>
-          <div className="space-y-2">
-            <div className="h-6 w-nav-rail rounded bg-primary-container" />
-            <p className="text-body-sm text-on-surface-variant">nav-rail 72px</p>
-            <div className="h-6 w-panel rounded bg-secondary-container" />
-            <p className="text-body-sm text-on-surface-variant">panel 400px</p>
-          </div>
-        </section>
+      {/* ---------- Ana içerik ---------- */}
+      <main className="flex-1 overflow-y-auto">
+        {aktifSayfa === 'assets' && (
+          <AssetTable onAdd={() => panelAc()} onEdit={(asset) => panelAc(asset)} />
+        )}
       </main>
+
+      {/* ---------- Sağ panel ---------- */}
+      {/* Mobilde arka planı karartan katman */}
+      {panelAcik && (
+        <div
+          className="fixed inset-0 z-40 bg-inverse-surface/30 backdrop-blur-sm md:hidden"
+          onClick={panelKapat}
+          role="presentation"
+        />
+      )}
+
+      <aside
+        className={`fixed right-0 top-0 z-50 h-full w-panel max-w-full border-l border-outline-variant bg-surface-container-lowest shadow-2xl transition-transform duration-300 ${
+          panelAcik ? 'translate-x-0' : 'translate-x-full'
+        }`}
+        aria-hidden={!panelAcik}
+      >
+        {panelAcik && (
+          <AssetForm
+            asset={duzenlenen}
+            onSuccess={panelKapat}
+            onCancel={panelKapat}
+          />
+        )}
+      </aside>
+
+      {/* ---------- Bildirimler ---------- */}
+      <Toaster
+        position="bottom-right"
+        toastOptions={{
+          duration: 3500,
+          style: {
+            background: 'var(--color-inverse-surface)',
+            color: 'var(--color-inverse-on-surface)',
+            fontSize: '14px',
+            borderRadius: '12px',
+          },
+        }}
+      />
     </div>
   )
 }
-
-export default App

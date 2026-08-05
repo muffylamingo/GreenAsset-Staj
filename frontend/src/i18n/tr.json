@@ -1,0 +1,124 @@
+{
+  "app": {
+    "name": "GreenAsset",
+    "tagline": "Akıllı Şehir Varlık Yönetimi"
+  },
+  "nav": {
+    "dashboard": "Gösterge Paneli",
+    "map": "Harita",
+    "assets": "Varlıklar",
+    "reports": "Raporlar",
+    "settings": "Ayarlar",
+    "toggleTheme": "Temayı değiştir",
+    "toggleLanguage": "Dili değiştir"
+  },
+  "assetType": {
+    "TREE": "Ağaç",
+    "BENCH": "Bank",
+    "POLE": "Aydınlatma Direği",
+    "TRASH_BIN": "Çöp Kutusu",
+    "PLAYGROUND": "Oyun Grubu"
+  },
+  "status": {
+    "GOOD": "İyi",
+    "NEEDS_MAINTENANCE": "Bakım Lazım",
+    "BROKEN": "Arızalı"
+  },
+  "form": {
+    "addTitle": "Yeni Varlık Ekle",
+    "editTitle": "Varlığı Düzenle",
+    "name": "Varlık Adı",
+    "namePlaceholder": "örn. Çınar - 4. Bölge",
+    "type": "Varlık Tipi",
+    "status": "Mevcut Durum",
+    "coordinates": "Koordinatlar",
+    "latitude": "Enlem",
+    "longitude": "Boylam",
+    "useCurrent": "Konumumu kullan",
+    "mapHint": "Koordinatların otomatik dolması için haritaya tıkla",
+    "notes": "Ek Notlar",
+    "notesPlaceholder": "Dikim tarihi, model bilgisi gibi detaylar...",
+    "save": "Varlığı Kaydet",
+    "update": "Güncelle",
+    "cancel": "Vazgeç",
+    "district": "İlçe",
+    "districtAuto": "Koordinata göre otomatik belirlenir"
+  },
+  "validation": {
+    "nameRequired": "İsim boş olamaz",
+    "nameTooLong": "İsim en fazla 120 karakter olabilir",
+    "typeRequired": "Varlık tipi seçilmeli",
+    "statusRequired": "Durum seçilmeli",
+    "latRequired": "Enlem gerekli",
+    "lonRequired": "Boylam gerekli",
+    "latRange": "Enlem -90 ile 90 arasında olmalı",
+    "lonRange": "Boylam -180 ile 180 arasında olmalı",
+    "mustBeNumber": "Sayı olmalı",
+    "notesTooLong": "Not en fazla 1000 karakter olabilir"
+  },
+  "table": {
+    "title": "Varlıklar",
+    "recordCount": "{{count}} kayıt",
+    "search": "Varlıklarda ara...",
+    "addAsset": "Varlık Ekle",
+    "name": "Ad",
+    "type": "Tip",
+    "status": "Durum",
+    "coordinates": "Koordinat",
+    "district": "İlçe",
+    "createdAt": "Eklenme",
+    "actions": "İşlemler",
+    "edit": "Düzenle",
+    "delete": "Sil",
+    "showOnMap": "Haritada göster",
+    "selected": "{{count}} seçili",
+    "changeStatus": "Durum değiştir",
+    "export": "Dışa aktar",
+    "clearAll": "Tümünü temizle",
+    "rowsPerPage": "Sayfa başına",
+    "showing": "{{from}}-{{to}} / {{total}}",
+    "noDistrict": "—"
+  },
+  "filters": {
+    "all": "Tümü",
+    "type": "Tip",
+    "status": "Durum",
+    "district": "İlçe",
+    "allDistricts": "Tüm ilçeler",
+    "clear": "Filtreleri temizle"
+  },
+  "empty": {
+    "noAssets": "Henüz varlık yok",
+    "noAssetsHint": "İlk varlığını eklemek için yukarıdaki butonu kullan",
+    "noResults": "Filtrelerine uyan varlık yok",
+    "noResultsHint": "Filtreleri gevşetmeyi dene"
+  },
+  "errors": {
+    "loadFailed": "Veriler yüklenemedi",
+    "saveFailed": "Kaydedilemedi",
+    "deleteFailed": "Silinemedi",
+    "networkError": "Sunucuya ulaşılamıyor. Backend çalışıyor mu?",
+    "retry": "Tekrar dene",
+    "geolocationUnsupported": "Tarayıcın konum servisini desteklemiyor",
+    "geolocationDenied": "Konum izni verilmedi"
+  },
+  "toast": {
+    "created": "{{name}} eklendi",
+    "updated": "{{name}} güncellendi",
+    "deleted": "{{name}} silindi",
+    "bulkStatusChanged": "{{count}} varlığın durumu değiştirildi",
+    "bulkDeleted": "{{count}} varlık silindi"
+  },
+  "confirm": {
+    "deleteTitle": "Varlığı sil",
+    "deleteMessage": "\"{{name}}\" kalıcı olarak silinecek. Bu işlem geri alınamaz.",
+    "bulkDeleteTitle": "Seçili varlıkları sil",
+    "bulkDeleteMessage": "{{count}} varlık kalıcı olarak silinecek. Bu işlem geri alınamaz.",
+    "confirm": "Sil",
+    "cancel": "Vazgeç"
+  },
+  "common": {
+    "loading": "Yükleniyor...",
+    "close": "Kapat"
+  }
+}
