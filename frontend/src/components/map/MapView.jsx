@@ -1,6 +1,7 @@
-// MapLibre v6 varsayılan export sunmuyor (v5'te sunuyordu) — named import şart.
-// `Map` adı JavaScript'in yerleşik Map'iyle çakışmasın diye MapLibreMap kullanıyoruz.
-import { MapLibreMap, NavigationControl, ScaleControl } from 'maplibre-gl'
+// MapLibre v5 kullanıyoruz (v6 değil): v6 yeni ve haritayı hiç çizdiremedik,
+// ayrıca varsayılan export'u kaldırdığı için tüm dokümantasyon/örneklerden
+// ayrışıyor. v5 kararlı sürüm ve her öğretici onu anlatıyor.
+import maplibregl from 'maplibre-gl'
 import { useCallback, useEffect, useRef } from 'react'
 
 import {
@@ -133,7 +134,7 @@ export default function MapView({
   useEffect(() => {
     if (harita.current) return
 
-    const map = new MapLibreMap({
+    const map = new maplibregl.Map({
       container: kapsayici.current,
       style: ALTLIKLAR[koyu ? 'dark' : 'light'],
       center: merkez,
@@ -146,8 +147,11 @@ export default function MapView({
     // Üretim derlemesinde bu satır tamamen elenir (tree-shaking).
     if (import.meta.env.DEV) window.__harita = map
 
-    map.addControl(new NavigationControl({ showCompass: false }), 'top-right')
-    map.addControl(new ScaleControl({ maxWidth: 100, unit: 'metric' }), 'bottom-left')
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right')
+    map.addControl(
+      new maplibregl.ScaleControl({ maxWidth: 100, unit: 'metric' }),
+      'bottom-left',
+    )
 
     // 'style.load' hem ilk yüklemede hem setStyle() sonrasında tetiklenir.
     // Tema değişince altlık yeniden yüklenir ve BİZİM katmanlarımız da silinir;
