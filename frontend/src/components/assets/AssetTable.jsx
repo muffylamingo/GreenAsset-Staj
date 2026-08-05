@@ -163,7 +163,7 @@ export default function AssetTable({ onEdit, onAdd, onShowOnMap }) {
   return (
     <div className="flex h-full flex-col">
       {/* Başlık */}
-      <div className="flex flex-wrap items-center justify-between gap-gutter px-margin-page pt-margin-page">
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-gutter px-margin-page pt-margin-page">
         <div>
           <h1 className="text-headline-lg text-on-surface">{t('table.title')}</h1>
           <p className="nums text-body-sm text-on-surface-variant">
@@ -192,7 +192,7 @@ export default function AssetTable({ onEdit, onAdd, onShowOnMap }) {
       </div>
 
       {/* Filtre şeridi */}
-      <div className="flex flex-wrap items-center gap-2 px-margin-page py-gutter">
+      <div className="flex shrink-0 flex-wrap items-center gap-2 px-margin-page py-gutter">
         {ASSET_TYPE_KEYS.map((tip) => (
           <Chip
             key={tip}
@@ -245,8 +245,11 @@ export default function AssetTable({ onEdit, onAdd, onShowOnMap }) {
         )}
       </div>
 
-      {/* Tablo */}
-      <div className="mx-margin-page mb-margin-page flex-1 overflow-hidden rounded-xl bg-surface-container-lowest">
+      {/* Tablo
+          min-h-0: flexbox tuzağı. Bir flex öğesi varsayılan olarak
+          içeriğinden küçülemez (min-height: auto); bu satır olmadan kart
+          taşar, overflow devreye girmez ve alt satırlar kırpılır. */}
+      <div className="mx-margin-page mb-margin-page flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl bg-surface-container-lowest">
         {isError ? (
           <ErrorState error={error} onRetry={refetch} />
         ) : isLoading ? (
@@ -258,9 +261,11 @@ export default function AssetTable({ onEdit, onAdd, onShowOnMap }) {
             onAdd={onAdd}
           />
         ) : (
-          <div className="overflow-x-auto">
+          <div className="scrollbar-thin min-h-0 flex-1 overflow-auto">
             <table className="w-full border-collapse">
-              <thead>
+              {/* sticky: sayfa kaydıkça sütun başlıkları üstte kalsın.
+                  Zemin rengi şart — yoksa satırlar başlığın altından geçer. */}
+              <thead className="sticky top-0 z-10 bg-surface-container-lowest">
                 <tr className="border-b border-outline-variant">
                   <th className="w-10 px-gutter py-3">
                     <input
@@ -386,7 +391,7 @@ export default function AssetTable({ onEdit, onAdd, onShowOnMap }) {
 
         {/* Sayfalama */}
         {kayitlar.length > 0 && (
-          <div className="flex flex-wrap items-center justify-between gap-gutter border-t border-outline-variant px-gutter py-3">
+          <div className="flex shrink-0 flex-wrap items-center justify-between gap-gutter border-t border-outline-variant px-gutter py-3">
             <div className="flex items-center gap-2">
               <span className="text-body-sm text-on-surface-variant">
                 {t('table.rowsPerPage')}

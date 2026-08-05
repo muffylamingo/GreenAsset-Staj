@@ -95,7 +95,9 @@ export default function App() {
       </nav>
 
       {/* ---------- Ana içerik ---------- */}
-      <main className="flex-1 overflow-y-auto">
+      {/* overflow-hidden: kaydırmayı sayfa değil, tablonun kendi gövdesi yapsın.
+          Böylece sütun başlıkları ve sayfalama hep ekranda kalır. */}
+      <main className="flex-1 overflow-hidden">
         {aktifSayfa === 'assets' && (
           <AssetTable onAdd={() => panelAc()} onEdit={(asset) => panelAc(asset)} />
         )}
