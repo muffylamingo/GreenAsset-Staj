@@ -5,5 +5,6 @@ tüm modeller burada import edilmelidir.
 """
 
 from app.models.asset import Asset, AssetStatus, AssetType
+from app.models.district import District
 
-__all__ = ["Asset", "AssetStatus", "AssetType"]
+__all__ = ["Asset", "AssetStatus", "AssetType", "District"]
