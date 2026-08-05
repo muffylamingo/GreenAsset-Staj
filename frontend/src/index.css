@@ -1,0 +1,219 @@
+@import 'tailwindcss';
+
+/* NOT: Material Symbols FONTU bilerek kullanılmıyor.
+   Variable font 7792 ikon içeriyor ve 3.96 MB — biz ~35 ikon kullanıyoruz.
+   Onun yerine tek tek SVG import ediliyor: src/components/ui/Icon.jsx (~8 KB). */
+
+/* MapLibre'nin kendi stilleri (kontroller, popup, atıf) */
+@import 'maplibre-gl/dist/maplibre-gl.css';
+
+/* Koyu tema "class" stratejisiyle: <html class="dark">
+   Tailwind v4'te bu satır olmadan dark: varyantı sistem temasına bakar. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ==========================================================================
+   TASARIM TOKEN'LARI
+   Kaynak: docs/design/01-harita-ekrani.html (Google Stitch export'u)
+   Material Design 3 mimarisi: her rengin bir de "üzerine ne yazılır" eşi var.
+   ========================================================================== */
+@theme {
+  /* --- Ana renkler --- */
+  --color-primary: #00652c;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #15803d;
+  --color-on-primary-container: #d3ffd5;
+  --color-primary-fixed: #95f8a7;
+  --color-primary-fixed-dim: #79db8d;
+  --color-on-primary-fixed: #00210a;
+  --color-on-primary-fixed-variant: #005323;
+  --color-inverse-primary: #79db8d;
+  --color-surface-tint: #006d30;
+
+  --color-secondary: #006a61;
+  --color-on-secondary: #ffffff;
+  --color-secondary-container: #86f2e4;
+  --color-on-secondary-container: #006f66;
+  --color-secondary-fixed: #89f5e7;
+  --color-secondary-fixed-dim: #6bd8cb;
+  --color-on-secondary-fixed: #00201d;
+  --color-on-secondary-fixed-variant: #005049;
+
+  --color-tertiary: #4a586d;
+  --color-on-tertiary: #ffffff;
+  --color-tertiary-container: #627086;
+  --color-on-tertiary-container: #eff4ff;
+  --color-tertiary-fixed: #d5e3fd;
+  --color-tertiary-fixed-dim: #b9c7e0;
+  --color-on-tertiary-fixed: #0d1c2f;
+  --color-on-tertiary-fixed-variant: #3a485c;
+
+  --color-error: #ba1a1a;
+  --color-on-error: #ffffff;
+  --color-error-container: #ffdad6;
+  --color-on-error-container: #93000a;
+
+  /* --- Yüzeyler --- */
+  --color-background: #f6fbf2;
+  --color-on-background: #181d17;
+  --color-surface: #f6fbf2;
+  --color-surface-bright: #f6fbf2;
+  --color-surface-dim: #d6dcd3;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #f0f5ec;
+  --color-surface-container: #eaefe6;
+  --color-surface-container-high: #e4eae1;
+  --color-surface-container-highest: #dfe4db;
+  --color-surface-variant: #dfe4db;
+  --color-on-surface: #181d17;
+  --color-on-surface-variant: #3f493f;
+  --color-outline: #6f7a6e;
+  --color-outline-variant: #becabc;
+  --color-inverse-surface: #2c322c;
+  --color-inverse-on-surface: #edf2e9;
+
+  /* --- Durum renkleri ---
+     DİKKAT: Stitch legend'ında "bakım" teal idi; amber'a çevirdik.
+     Gerekçe DESIGN-SYSTEM.md'de. Trafik ışığı mantığı + renk körlüğü. */
+  --color-status-good: #15803d;
+  --color-status-maintenance: #f59e0b;
+  --color-status-broken: #ba1a1a;
+
+  /* --- Tipografi --- */
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+
+  --text-display: 32px;
+  --text-display--line-height: 1.2;
+  --text-display--letter-spacing: -0.02em;
+  --text-display--font-weight: 700;
+
+  --text-headline-lg: 24px;
+  --text-headline-lg--line-height: 1.25;
+  --text-headline-lg--font-weight: 600;
+
+  --text-headline-md: 20px;
+  --text-headline-md--line-height: 1.25;
+  --text-headline-md--font-weight: 600;
+
+  --text-body-lg: 16px;
+  --text-body-lg--line-height: 1.4;
+  --text-body-lg--font-weight: 400;
+
+  --text-body-md: 14px;
+  --text-body-md--line-height: 1.4;
+  --text-body-md--font-weight: 400;
+
+  --text-body-sm: 12px;
+  --text-body-sm--line-height: 1.3;
+  --text-body-sm--font-weight: 400;
+
+  --text-label-md: 12px;
+  --text-label-md--line-height: 1;
+  --text-label-md--letter-spacing: 0.02em;
+  --text-label-md--font-weight: 600;
+
+  --text-data-tabular: 13px;
+  --text-data-tabular--line-height: 1.2;
+  --text-data-tabular--font-weight: 500;
+
+  /* --- Ölçüler --- */
+  --spacing-nav-rail: 72px;
+  --spacing-panel: 400px;
+  /* panel + sayfa kenar boşluğu — yüzen öğeleri panelin soluna itmek için */
+  --spacing-panel-offset: 424px;
+  --spacing-margin-page: 24px;
+  --spacing-gutter: 16px;
+  --spacing-component-padding: 12px;
+  --spacing-stack-gap: 8px;
+
+  /* --- Köşe yarıçapı --- */
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+}
+
+/* ==========================================================================
+   KOYU TEMA
+   M3'te koyu tema ayrı bir palettir; token ADLARI aynı kalır, değerleri değişir.
+   Böylece bileşen kodunda tek bir "dark:" bile yazmak gerekmez.
+   ========================================================================== */
+.dark {
+  --color-background: #101510;
+  --color-on-background: #e1e5dd;
+  --color-surface: #101510;
+  --color-surface-bright: #363b35;
+  --color-surface-dim: #101510;
+  --color-surface-container-lowest: #0b0f0a;
+  --color-surface-container-low: #181d17;
+  --color-surface-container: #1c211b;
+  --color-surface-container-high: #262b25;
+  --color-surface-container-highest: #313630;
+  --color-surface-variant: #424940;
+  --color-on-surface: #e1e5dd;
+  --color-on-surface-variant: #c1c9bd;
+  --color-outline: #8b9389;
+  --color-outline-variant: #424940;
+  --color-inverse-surface: #e1e5dd;
+  --color-inverse-on-surface: #2c322c;
+
+  --color-primary: #79db8d;
+  --color-on-primary: #003914;
+  --color-primary-container: #005323;
+  --color-on-primary-container: #95f8a7;
+
+  --color-secondary: #6bd8cb;
+  --color-on-secondary: #003733;
+  --color-secondary-container: #005049;
+  --color-on-secondary-container: #89f5e7;
+
+  --color-error: #ffb4ab;
+  --color-on-error: #690005;
+  --color-error-container: #93000a;
+  --color-on-error-container: #ffdad6;
+
+  /* Durum renkleri koyu zeminde daha parlak olmalı ki okunsun */
+  --color-status-good: #4ade80;
+  --color-status-maintenance: #fbbf24;
+  --color-status-broken: #ff6b6b;
+}
+
+/* ==========================================================================
+   TEMEL STİLLER
+   ========================================================================== */
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-on-background);
+  }
+
+  /* Koordinat ve sayı sütunları hizalı görünsün */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer utilities {
+  /* Panel gövdesindeki ince scrollbar (tasarımdaki custom-scrollbar) */
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: var(--color-outline-variant);
+    border-radius: 10px;
+  }
+
+  /* Filtre chip şeridi için gizli scrollbar */
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
