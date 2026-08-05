@@ -1,7 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "PowerShell(Get-ChildItem -Force C:\\\\Users\\\\hp\\\\Desktop\\\\stajproje2 | Select-Object Mode,Length,Name; Write-Output \"---versiyonlar---\"; foreach \\($c in @\\('node','npm','python','py','docker','git'\\)\\) { $p = \\(Get-Command $c -ErrorAction SilentlyContinue\\); if \\($p\\) { \"$c : $\\($p.Source\\)\" } else { \"$c : YOK\" } })"
-    ]
-  }
-}

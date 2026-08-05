@@ -22,6 +22,9 @@ dist-ssr/
 .vite/
 *.local
 
+# --- Claude Code yerel ayarları (kişiye özel) ---
+.claude/settings.local.json
+
 # --- Editör / IDE ---
 .vscode/*
 !.vscode/extensions.json
