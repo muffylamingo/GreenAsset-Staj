@@ -1,9 +1,11 @@
-import { useState } from 'react'
-import { Toaster } from 'react-hot-toast'
+import { useCallback, useState } from 'react'
+import toast, { Toaster } from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
 
+import { getAsset } from './api/assets'
 import AssetForm from './components/assets/AssetForm'
 import AssetTable from './components/assets/AssetTable'
+import MapPage from './components/map/MapPage'
 import Icon from './components/ui/Icon'
 import { useTheme } from './hooks/useTheme'
 import { dilDegistir } from './i18n'
@@ -13,13 +15,11 @@ import { dilDegistir } from './i18n'
  *
  * Yerleşim tasarımdan geliyor (docs/design/01-harita-ekrani.html):
  *   sol ikon rayı (72px) + ana içerik + sağdan açılan panel (400px)
- *
- * Aşama 4'te "Harita" sekmesi eklenecek ve panel haritanın üzerine binecek.
  */
 
 const MENU = [
   { anahtar: 'dashboard', icon: 'dashboard', hazir: false },
-  { anahtar: 'map', icon: 'map', hazir: false },
+  { anahtar: 'map', icon: 'map', hazir: true },
   { anahtar: 'assets', icon: 'inventory_2', hazir: true },
   { anahtar: 'reports', icon: 'analytics', hazir: false },
 ]
@@ -28,9 +28,14 @@ export default function App() {
   const { t, i18n } = useTranslation()
   const { koyu, temaDegistir } = useTheme()
 
-  const [aktifSayfa, setAktifSayfa] = useState('assets')
+  const [aktifSayfa, setAktifSayfa] = useState('map')
   const [panelAcik, setPanelAcik] = useState(false)
   const [duzenlenen, setDuzenlenen] = useState(null)
+  // Haritadan gelen koordinat — forma aktarılacak
+  const [koordinat, setKoordinat] = useState(null)
+  const [seciliId, setSeciliId] = useState(null)
+  // Tablodan "haritada göster" denince haritanın uçacağı nokta
+  const [ucKoordinat, setUcKoordinat] = useState(null)
 
   const panelAc = (asset = null) => {
     setDuzenlenen(asset)
@@ -40,7 +45,44 @@ export default function App() {
   const panelKapat = () => {
     setPanelAcik(false)
     setDuzenlenen(null)
+    setKoordinat(null)
+    setSeciliId(null)
   }
+
+  /**
+   * Haritada boş bir yere tıklandı → ekleme formunu aç ve koordinatları doldur.
+   * Ödevin 4. aşama şartı: "Harita üzerinde bir noktaya tıklandığında, o noktanın
+   * koordinatlarını Ekleme Formu'na otomatik doldur."
+   *
+   * useCallback şart: MapView bu fonksiyonu bağımlılık olarak kullanıyor,
+   * her render'da yenisi üretilirse olay dinleyicileri sürekli sökülüp takılır.
+   */
+  const haritayaTiklandi = useCallback((konum) => {
+    setDuzenlenen(null)
+    setKoordinat(konum)
+    setSeciliId(null)
+    setPanelAcik(true)
+  }, [])
+
+  /**
+   * Haritada bir varlığa tıklandı → düzenleme formunu aç.
+   *
+   * DİKKAT: Harita GeoJSON'ının properties'inde sadece özet alanlar var
+   * (1500 nokta × gereksiz alan = şişmiş yanıt). `notes` orada YOK.
+   * Eksik veriyle formu açsak, kaydedildiğinde mevcut not silinirdi.
+   * Bu yüzden tam kaydı API'den çekiyoruz.
+   */
+  const varligaTiklandi = useCallback(async (ozellikler) => {
+    setKoordinat(null)
+    setSeciliId(ozellikler.id)
+    setPanelAcik(true)
+    try {
+      setDuzenlenen(await getAsset(ozellikler.id))
+    } catch {
+      toast.error(t('errors.loadFailed'))
+      setPanelAcik(false)
+    }
+  }, [t])
 
   return (
     <div className="flex h-screen overflow-hidden bg-background text-on-background">
@@ -95,16 +137,32 @@ export default function App() {
       </nav>
 
       {/* ---------- Ana içerik ---------- */}
-      {/* overflow-hidden: kaydırmayı sayfa değil, tablonun kendi gövdesi yapsın.
-          Böylece sütun başlıkları ve sayfalama hep ekranda kalır. */}
+      {/* overflow-hidden: kaydırmayı sayfa değil, içerik kendi yapsın */}
       <main className="flex-1 overflow-hidden">
+        {aktifSayfa === 'map' && (
+          <MapPage
+            koyu={koyu}
+            onMapClick={haritayaTiklandi}
+            onFeatureClick={varligaTiklandi}
+            seciliId={seciliId}
+            ucKoordinat={ucKoordinat}
+          />
+        )}
+
         {aktifSayfa === 'assets' && (
-          <AssetTable onAdd={() => panelAc()} onEdit={(asset) => panelAc(asset)} />
+          <AssetTable
+            onAdd={() => panelAc()}
+            onEdit={(asset) => panelAc(asset)}
+            onShowOnMap={(asset) => {
+              setSeciliId(asset.id)
+              setUcKoordinat({ lat: asset.latitude, lon: asset.longitude })
+              setAktifSayfa('map')
+            }}
+          />
         )}
       </main>
 
       {/* ---------- Sağ panel ---------- */}
-      {/* Mobilde arka planı karartan katman */}
       {panelAcik && (
         <div
           className="fixed inset-0 z-40 bg-inverse-surface/30 backdrop-blur-sm md:hidden"
@@ -122,6 +180,7 @@ export default function App() {
         {panelAcik && (
           <AssetForm
             asset={duzenlenen}
+            koordinat={koordinat}
             onSuccess={panelKapat}
             onCancel={panelKapat}
           />
@@ -130,7 +189,7 @@ export default function App() {
 
       {/* ---------- Bildirimler ---------- */}
       <Toaster
-        position="bottom-right"
+        position="bottom-center"
         toastOptions={{
           duration: 3500,
           style: {

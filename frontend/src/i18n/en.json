@@ -79,6 +79,12 @@
     "showing": "{{from}}-{{to}} of {{total}}",
     "noDistrict": "—"
   },
+  "map": {
+    "legend": "Map Legend",
+    "search": "Search asset or address...",
+    "assetsInView": "{{count}} assets in view",
+    "clickHint": "Click on the map to add an asset"
+  },
   "filters": {
     "all": "All",
     "type": "Type",

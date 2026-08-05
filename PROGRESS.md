@@ -8,7 +8,7 @@
 ## Genel Durum
 
 ```
-████████████████████████████░░░░░░░░░░░░  70%
+█████████████████████████████████░░░░░░░  82%
 ```
 
 | # | Aşama | Ağırlık | Durum | Tamamlanma |
@@ -17,11 +17,11 @@
 | 1 | Veritabanı & Docker | 15% | ✅ Bitti | `██████████` 100% |
 | 2 | Backend REST API | 25% | ✅ Bitti | `██████████` 100% |
 | 3 | Frontend — form & tablo | 20% | ✅ Bitti | `██████████` 100% |
-| 4 | Harita entegrasyonu | 15% | ⚪ Başlanmadı | `░░░░░░░░░░` 0% |
+| 4 | Harita entegrasyonu | 15% | 🟡 Devam ediyor | `████████░░` 85% |
 | 5 | Analiz & raporlama | 15% | ⚪ Başlanmadı | `░░░░░░░░░░` 0% |
 | 6 | Cila & teslim | 5% | ⚪ Başlanmadı | `░░░░░░░░░░` 0% |
 
-**Hesap:** 5 + 15 + 25 + 20 = **70%**
+**Hesap:** 5 + 15 + 25 + 20 + (15 × 0.85) = **82%**
 
 ---
 
@@ -143,20 +143,37 @@
 
 ---
 
-## Aşama 4 — Harita entegrasyonu ⚪ 0%
+## Aşama 4 — Harita entegrasyonu 🟡 85%
 
-- [ ] MapLibre kurulumu + `useRef` ile harita nesnesi (sonsuz render tuzağı)
-- [ ] Ücretsiz altlık (Carto Positron açık / Dark Matter koyu)
-- [ ] Harita İstanbul'da açılsın (İTÜ Ayazağa merkezli)
-- [ ] Backend GeoJSON'ı `source` olarak bağla
-- [ ] `circle-layer` + duruma göre renk (`statusMatchExpression`)
-- [ ] Noktaya tıkla → popup (ad, tip, durum, düzenle)
-- [ ] **Haritaya tıkla → form koordinatları otomatik dolsun** (ödev şartı)
-- [ ] Legend kartı (durum renkleri + tip ikonları)
-- [ ] Filtre chip şeridi (Tümü / Ağaç / Bank / Direk / Çöp / Oyun)
-- [ ] "N varlık görünüyor" rozeti — bbox'a bağlı canlı sayaç
-- [ ] Tablo ↔ harita çift yönlü seçim
-- [ ] Tema değişince harita altlığı da değişsin
+- [x] MapLibre kurulumu + `useRef` ile harita nesnesi (sonsuz render tuzağı)
+- [x] Ücretsiz altlık (Carto Positron açık / Dark Matter koyu)
+- [x] Harita İstanbul'da açılıyor (İTÜ Ayazağa merkezli, zoom 11)
+- [x] Backend GeoJSON'ı `source` olarak bağlı
+- [x] `circle-layer` + duruma göre renk
+- [x] **Kümeleme (clustering)** — 1500 nokta yerine sayı balonları
+- [x] **Haritaya tıkla → form koordinatları otomatik dolsun** (ödev şartı)
+- [x] Noktaya tıkla → tam kayıt API'den çekilip düzenleme paneli açılıyor
+- [x] Legend kartı (durum renkleri + tip ikonları)
+- [x] Filtre chip şeridi + harita üstü arama
+- [x] "N varlık görünüyor" rozeti — bbox'a bağlı canlı sayaç
+- [x] Tablo → haritada göster (`flyTo` + seçili nokta vurgusu)
+- [x] Tema değişince harita altlığı da değişiyor
+- [ ] Noktaya tıklayınca **popup** (şu an doğrudan düzenleme paneli açılıyor)
+- [ ] Harita → tablo yönünde seçim (çift yönlü bağlantının diğer yarısı)
+
+### Çözülen üç hata
+| Hata | Sebep |
+|---|---|
+| `does not provide an export named 'default'` | MapLibre v6 varsayılan export'u kaldırmış; `MapLibreMap` named import'a geçildi |
+| Katmanlar hiç eklenmiyordu | Tema `useEffect`'i ilk render'da da `setStyle()` çağırıp yükleme zincirini bozuyordu + `styledata` olayında `isStyleLoaded()` hep `false` dönüyordu. `style.load` olayına geçildi |
+| Sayaç 0'da takılıydı | bbox harita yüklenince geliyor, veri sonra; `useMemo` ile ikisine birden bağlandı |
+
+> ⚠️ **Görsel doğrulama yapılamadı.** Browser paneli görünür olmadığı için sayfa
+> kare üretmiyor; MapLibre karo işlemeyi çizim geçişine kadar erteliyor, bu yüzden
+> `queryRenderedFeatures` 0 dönüyor ve ekran görüntüsü alınamıyor.
+> **Noktaların gerçekten göründüğünü senin tarayıcında kontrol etmen gerekiyor.**
+> Doğrulanabilenler: kaynak ve 4 katman eklendi, sayaç 819 varlık gösterdi,
+> haritaya tıklayınca form `41.105000 / 29.027000` ile doldu.
 
 ---
 
