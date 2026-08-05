@@ -17,7 +17,7 @@
 | 1 | Veritabanı & Docker | 15% | ✅ Bitti | `██████████` 100% |
 | 2 | Backend REST API | 25% | ✅ Bitti | `██████████` 100% |
 | 3 | Frontend — form & tablo | 20% | ✅ Bitti | `██████████` 100% |
-| 4 | Harita entegrasyonu | 15% | 🟡 Devam ediyor | `████████░░` 85% |
+| 4 | Harita entegrasyonu | 15% | 🟠 Doğrulama bekliyor | `████████░░` 85% |
 | 5 | Analiz & raporlama | 15% | ⚪ Başlanmadı | `░░░░░░░░░░` 0% |
 | 6 | Cila & teslim | 5% | ⚪ Başlanmadı | `░░░░░░░░░░` 0% |
 
@@ -212,6 +212,7 @@
 
 | # | Sorun | Etki | Ne zaman |
 |---|---|---|---|
+| 0 | **Harita görsel olarak doğrulanmadı** | Aşama 5'e geçmeden önce bilinmeli | **Sıradaki iş — senin bakman gerekiyor** |
 | 1 | `gh` CLI token'ı geçersiz | PR'ları ben açamıyorum, sen açıyorsun | `gh auth login` çalıştırınca çözülür |
 | 2 | GitHub varsayılan dalı `feature/01-docker-db` | PR'lar yanlış dala açılıyor | **Senin yapman lazım** — aşağıda |
 | 3 | `feature/01-docker-db` ve `feature/02-backend-api` dalları uzakta duruyor | Karışıklık | Merge sonrası GitHub'dan silinebilir |
