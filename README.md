@@ -49,7 +49,21 @@ docker compose up -d
 docker compose exec backend alembic upgrade head
 ```
 
-### 4) Kontrol et
+### 4) Demo verisini yükle
+
+İlçe sınırlarını OpenStreetMap'ten indir (bir kez yeterli):
+
+```bash
+python db/seed/fetch_districts.py
+```
+
+Veritabanını 1500 varlıkla doldur:
+
+```bash
+docker compose exec backend python -m app.seed --assets 1500 --reset
+```
+
+### 5) Kontrol et
 
 | Servis | Adres | Not |
 |---|---|---|
@@ -115,7 +129,7 @@ docker compose down -v
 
 - [x] Aşama 0 — Proje iskeleti, Git, .gitignore
 - [x] Aşama 1 — Docker Compose, PostGIS, pgAdmin, Alembic migration
-- [ ] Aşama 2 — REST API (CRUD + GeoJSON + filtreler)
+- [x] Aşama 2 — REST API (CRUD + GeoJSON + filtreler + ilçe/ST_Within)
 - [ ] Aşama 3 — Frontend form ve tablo
 - [ ] Aşama 4 — MapLibre harita entegrasyonu
 - [ ] Aşama 5 — Dashboard, mekansal sorgu, dışa aktarım

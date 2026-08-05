@@ -78,6 +78,8 @@ services:
     volumes:
       # Geliştirme kolaylığı: kodu değiştir → uvicorn otomatik yeniden başlar
       - ./backend:/app
+      # Seed verileri (ilçe sınırları GeoJSON'u) — sadece okuma
+      - ./db/seed:/app/seed_data:ro
     depends_on:
       db:
         condition: service_healthy

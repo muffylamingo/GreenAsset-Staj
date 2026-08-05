@@ -10,19 +10,25 @@ import uuid
 from datetime import datetime
 
 from geoalchemy2 import Geometry
-from sqlalchemy import DateTime, Enum, Index, String, func, text
+from sqlalchemy import DateTime, Enum, ForeignKey, Index, String, func, text
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
 
 
 class AssetType(str, enum.Enum):
-    """Varlık tipi. Değerler veritabanında saklanır, etiketler frontend'de çevrilir."""
+    """Varlık tipi. Değerler veritabanında saklanır, etiketler frontend'de çevrilir.
+
+    Ödev üç tip istiyor (Ağaç, Bank, Direk); tasarımdaki belediye senaryosunu
+    tamamlamak için iki tip daha eklendi.
+    """
 
     TREE = "TREE"  # Ağaç
-    BENCH = "BENCH"  # Bank / park mobilyası
+    BENCH = "BENCH"  # Bank / oturma birimi
     POLE = "POLE"  # Aydınlatma direği
+    TRASH_BIN = "TRASH_BIN"  # Çöp kutusu
+    PLAYGROUND = "PLAYGROUND"  # Oyun grubu
 
 
 class AssetStatus(str, enum.Enum):
@@ -66,6 +72,14 @@ class Asset(Base):
         Geometry(geometry_type="POINT", srid=4326, spatial_index=False),
         nullable=False,
     )
+
+    # Hangi ilçede olduğu — ELLE GİRİLMEZ, kayıt eklenirken/güncellenirken
+    # ST_Within ile otomatik hesaplanır (bkz. app/crud/asset.py).
+    # nullable: nokta hiçbir ilçe sınırına düşmezse (deniz, sınır dışı) NULL kalır.
+    district_id: Mapped[int | None] = mapped_column(
+        ForeignKey("districts.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    district = relationship("District", back_populates="assets", lazy="joined")
 
     notes: Mapped[str | None] = mapped_column(String(1000), nullable=True)
 
