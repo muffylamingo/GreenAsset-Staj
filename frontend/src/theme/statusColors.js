@@ -18,11 +18,55 @@ export const STATUS_HEX = {
   BROKEN: '#ba1a1a',
 }
 
-/** Koyu temada haritanın kullanacağı, daha parlak varyantlar. */
+/**
+ * Koyu tema varyantları.
+ *
+ * İlk denemede üçünü birden açmıştık (#4ade80 / #fbbf24 / #ff6b6b). Renk körlüğü
+ * doğrulayıcısı bunu REDDETTİ: protanopi altında yeşil ile amber arasındaki fark
+ * ΔE 7.3'e düşüyordu (eşik 8) — yani kırmızı-yeşil renk körü biri "iyi" ile
+ * "bakım lazım"ı ayırt edemeyecekti.
+ *
+ * Sebep: açık temada ayrım yeşilin KOYU, amberin AÇIK olmasından geliyordu.
+ * Koyu temada yeşili açınca o aydınlık farkı kapandı. Yeşili koyulaştırıp
+ * amberi açarak farkı geri kazandık: ΔE 17.5.
+ *
+ * Doğrulandığı yüzeyler: #080B07 (kart), #0E120D (sayfa), #26282B (koyu harita
+ * altlığı) — üçünde de kontrast ≥ 3:1.
+ */
 export const STATUS_HEX_DARK = {
-  GOOD: '#4ade80',
-  NEEDS_MAINTENANCE: '#fbbf24',
-  BROKEN: '#ff6b6b',
+  GOOD: '#178a48',
+  NEEDS_MAINTENANCE: '#ffc94d',
+  BROKEN: '#f76b6b',
+}
+
+/**
+ * Grafik renkleri.
+ *
+ * Tipe ve ilçeye göre barlar NOMİNAL kategoriler — sıralarını değiştirmek anlamı
+ * değiştirmiyor. Bu yüzden her bara ayrı renk vermiyoruz: bar UZUNLUĞU zaten
+ * büyüklüğü gösteriyor, renge ayrı bir iş yüklemek gereksiz. Hepsi tek hue.
+ *
+ * (Durum grafiği ayrı: orada renk gerçekten anlam taşıyor — STATUS_HEX kullanılır.)
+ */
+export const CHART_HEX = {
+  bar: '#15803d',
+  barDark: '#79db8d',
+  area: '#00652c',
+  areaDark: '#79db8d',
+  grid: '#e2e8e0',
+  gridDark: '#2a3128',
+  axis: '#6b766a',
+  axisDark: '#8d968a',
+}
+
+export function grafikRenkleri(koyu) {
+  return {
+    bar: koyu ? CHART_HEX.barDark : CHART_HEX.bar,
+    area: koyu ? CHART_HEX.areaDark : CHART_HEX.area,
+    grid: koyu ? CHART_HEX.gridDark : CHART_HEX.grid,
+    axis: koyu ? CHART_HEX.axisDark : CHART_HEX.axis,
+    status: koyu ? STATUS_HEX_DARK : STATUS_HEX,
+  }
 }
 
 /** Tablo/rozet için Tailwind sınıfları. */

@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { getAsset } from './api/assets'
 import AssetForm from './components/assets/AssetForm'
 import AssetTable from './components/assets/AssetTable'
+import DashboardPage from './components/dashboard/DashboardPage'
 import MapPage from './components/map/MapPage'
 import Icon from './components/ui/Icon'
 import { useTheme } from './hooks/useTheme'
@@ -18,7 +19,7 @@ import { dilDegistir } from './i18n'
  */
 
 const MENU = [
-  { anahtar: 'dashboard', icon: 'dashboard', hazir: false },
+  { anahtar: 'dashboard', icon: 'dashboard', hazir: true },
   { anahtar: 'map', icon: 'map', hazir: true },
   { anahtar: 'assets', icon: 'inventory_2', hazir: true },
   { anahtar: 'reports', icon: 'analytics', hazir: false },
@@ -139,6 +140,8 @@ export default function App() {
       {/* ---------- Ana içerik ---------- */}
       {/* overflow-hidden: kaydırmayı sayfa değil, içerik kendi yapsın */}
       <main className="flex-1 overflow-hidden">
+        {aktifSayfa === 'dashboard' && <DashboardPage koyu={koyu} />}
+
         {aktifSayfa === 'map' && (
           <MapPage
             koyu={koyu}
