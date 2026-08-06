@@ -20,6 +20,7 @@ from sqlalchemy.orm import Session
 
 from app.api.converters import asset_to_feature, asset_to_out
 from app.core.database import get_db
+from app.core.deps import require_admin
 from app.crud import asset as crud
 from app.models.asset import AssetStatus, AssetType
 from app.schemas.asset import (
@@ -166,7 +167,13 @@ def bulk_status(payload: BulkStatusPayload, db: DbSession) -> BulkResult:
     return BulkResult(affected=crud.bulk_update_status(db, payload.ids, payload.status))
 
 
-@router.post("/bulk/delete", response_model=BulkResult, summary="Toplu sil")
+@router.post(
+    "/bulk/delete",
+    response_model=BulkResult,
+    summary="Toplu sil",
+    description="⚠️ Yalnızca **yönetici**. Saha ekibi 403 alır.",
+    dependencies=[Depends(require_admin)],
+)
 def bulk_delete(payload: BulkIdsPayload, db: DbSession) -> BulkResult:
     return BulkResult(affected=crud.bulk_delete(db, payload.ids))
 
@@ -204,6 +211,12 @@ def update_asset(asset_id: uuid.UUID, payload: AssetUpdate, db: DbSession) -> As
     "/{asset_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Varlık sil",
+    description=(
+        "⚠️ Yalnızca **yönetici**. Saha ekibi 403 alır.\n\n"
+        "Silme geri alınamaz ve varlığın bakım geçmişi de birlikte gider "
+        "(ON DELETE CASCADE) — bu yüzden yetkisi ayrılmıştır."
+    ),
+    dependencies=[Depends(require_admin)],
 )
 def delete_asset(asset_id: uuid.UUID, db: DbSession) -> None:
     crud.delete_asset(db, _get_or_404(db, asset_id))

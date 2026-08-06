@@ -79,6 +79,18 @@
     "showing": "{{from}}-{{to}} / {{total}}",
     "noDistrict": "—"
   },
+  "auth": {
+    "login": "Giriş yap",
+    "logout": "Çıkış yap",
+    "username": "Kullanıcı adı",
+    "password": "Parola",
+    "failed": "Giriş yapılamadı",
+    "demoAccounts": "Demo hesapları (tıkla, doldursun)",
+    "roleAdmin": "Yönetici",
+    "roleField": "Saha ekibi",
+    "checking": "Oturum kontrol ediliyor...",
+    "noPermission": "Bu işlem için yönetici yetkisi gerekiyor"
+  },
   "maintenance": {
     "title": "Bakım Geçmişi",
     "empty": "Henüz bakım kaydı yok",

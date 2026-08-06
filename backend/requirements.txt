@@ -15,6 +15,11 @@ alembic>=1.13              # şema migration'ları
 # ---- Geometri işlemleri (Python tarafı) ----
 shapely>=2.0               # geometri <-> GeoJSON dönüşümü
 
+# ---- Kimlik doğrulama ----
+PyJWT>=2.8                 # JWT üretme/doğrulama
+bcrypt>=4.1                # parola özetleme (passlib yerine doğrudan)
+python-multipart>=0.0.9    # Swagger'ın "Authorize" formu için
+
 # ---- Yardımcılar ----
 python-dotenv>=1.0
 Faker>=25.0                # seed script: sahte varlık üretimi

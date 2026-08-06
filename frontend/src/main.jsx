@@ -17,6 +17,7 @@ import '@fontsource/jetbrains-mono/500.css'
 import './index.css'
 import './i18n'
 import App from './App.jsx'
+import { AuthProvider } from './auth/AuthContext'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -38,7 +39,9 @@ const queryClient = new QueryClient({
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <App />
+      <AuthProvider>
+        <App />
+      </AuthProvider>
     </QueryClientProvider>
   </StrictMode>,
 )
