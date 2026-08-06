@@ -138,6 +138,13 @@
     "exportGeojson": "GeoJSON indir",
     "share": "pay"
   },
+  "nearby": {
+    "title": "Yakınımdakiler",
+    "search": "Konumumu bul ve ara",
+    "onlyProblems": "Sadece bakım bekleyen / arızalı",
+    "found": "{{count}} varlık bulundu",
+    "noResult": "Bu yarıçapta varlık yok"
+  },
   "spatial": {
     "drawTitle": "Alan sorgusu",
     "drawHint": "Haritada bir alan çiz, içine düşen varlıkları listeleyeyim",

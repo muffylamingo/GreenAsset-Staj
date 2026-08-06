@@ -138,6 +138,13 @@
     "exportGeojson": "Download GeoJSON",
     "share": "share"
   },
+  "nearby": {
+    "title": "Near me",
+    "search": "Find my location and search",
+    "onlyProblems": "Only needs maintenance / broken",
+    "found": "{{count}} assets found",
+    "noResult": "No assets within this radius"
+  },
   "spatial": {
     "drawTitle": "Area query",
     "drawHint": "Draw an area on the map and I'll list the assets inside",

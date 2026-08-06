@@ -15,6 +15,7 @@ import { ErrorState } from '../ui/States'
 import MapLegend from './MapLegend'
 import MapSearch from './MapSearch'
 import MapView from './MapView'
+import NearbyPanel from './NearbyPanel'
 
 /**
  * Harita sayfası — tasarımdaki ana ekran.
@@ -183,11 +184,6 @@ export default function MapPage({
         </div>
       </div>
 
-      {/* --- Sol alt: açıklama kartı --- */}
-      <div className="pointer-events-none absolute bottom-14 left-margin-page z-20">
-        <MapLegend />
-      </div>
-
       {/* --- Sağ alt: görünen varlık sayacı --- */}
       <div className="absolute bottom-margin-page right-margin-page z-20">
         <div className="flex items-center gap-2 rounded-full border border-outline-variant/40 bg-surface/95 px-4 py-2 shadow-lg backdrop-blur-md">
@@ -203,7 +199,7 @@ export default function MapPage({
       </div>
 
       {/* --- Sol üst: ipucu + alan sorgusu aracı --- */}
-      <div className="absolute left-margin-page top-margin-page z-20 w-72 space-y-2">
+      <div className="scrollbar-thin absolute bottom-margin-page left-margin-page top-margin-page z-20 flex w-72 flex-col gap-2 overflow-y-auto">
         <div className="flex items-center gap-2 rounded-xl border border-outline-variant/40 bg-surface/90 px-3 py-2 shadow-lg backdrop-blur-md">
           <Icon
             name={cizimModu ? 'draw' : 'touch_app'}
@@ -213,6 +209,9 @@ export default function MapPage({
             {cizimModu ? t('spatial.drawing') : t('map.clickHint')}
           </span>
         </div>
+
+        {/* Yakınımdakiler — ST_DWithin, saha ekibi senaryosu */}
+        <NearbyPanel onKonumSec={setAdresKonumu} />
 
         {/* Alan sorgusu kartı — ödevin ST_Within şartının arayüz tarafı */}
         <div className="rounded-xl border border-outline-variant/40 bg-surface/95 p-3 shadow-lg backdrop-blur-md">
@@ -293,6 +292,9 @@ export default function MapPage({
             </>
           )}
         </div>
+
+        {/* Açıklama kartı en altta — sütun taşarsa kaydırılabiliyor */}
+        <MapLegend />
       </div>
     </div>
   )

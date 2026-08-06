@@ -13,7 +13,7 @@ export default function MapLegend() {
   const { t } = useTranslation()
 
   return (
-    <div className="pointer-events-auto w-56 rounded-xl border border-outline-variant/40 bg-surface/90 p-3 shadow-lg backdrop-blur-md">
+    <div className="shrink-0 rounded-xl border border-outline-variant/40 bg-surface/90 p-3 shadow-lg backdrop-blur-md">
       <h3 className="mb-2 text-label-md uppercase tracking-wider text-on-surface-variant">
         {t('map.legend')}
       </h3>
