@@ -143,6 +143,9 @@ Sarmalayıcılar: `Feature` (geometri + properties), `FeatureCollection` (featur
 | **shapely** | Geometri işlemleri (Python tarafı) | `mapping()`, `shape()` — GeoJSON dönüşümü |
 | **python-dotenv** | `.env` okuma | — |
 | **faker** | Sahte veri | `faker.latitude()`, seed script |
+| **PyJWT** | Oturum bileti üretme/doğrulama | `jwt.encode()`, `jwt.decode()` |
+| **bcrypt** | Parola özetleme | `hashpw()`, `checkpw()` |
+| **python-multipart** | Form verisi okuma | Sadece Swagger'ın Authorize formu için gerekli |
 | **pytest** + **httpx** | Test | `TestClient`, fixture |
 | **ruff** | Lint + format | `ruff check --fix` |
 
@@ -168,9 +171,151 @@ class AssetCreate(BaseModel):
 Bu 6 satır, ödevdeki "isim boş olamaz, koordinat sayı olmalı" şartını backend'de karşılar.
 **Validation her iki tarafta da yapılır** — frontend kullanıcı deneyimi için, backend güvenlik için.
 
+### 3.5 İlişkili tablolar (1-N) ve `column_property`
+
+`assets` ile `maintenance_logs` arasında **bire-çok** ilişki var: bir varlığın
+birden çok bakım kaydı olabilir.
+
+```python
+# maintenance.py — "çok" tarafı, yabancı anahtarı O tutar
+asset_id: Mapped[uuid.UUID] = mapped_column(
+    ForeignKey("assets.id", ondelete="CASCADE")
+)
+```
+
+**`ON DELETE CASCADE`:** varlık silinince kayıtları da silinir. Bunu
+veritabanı yapar, uygulama kodu değil — daha güvenilir, çünkü hangi yoldan
+silinirse silinsin çalışır.
+
+**N+1 problemi ve çözümü.** 25 varlık listelerken her biri için "son bakım
+tarihi" ayrı sorguyla çekilseydi 1 + 25 = 26 sorgu atılırdı. Çözüm:
+
+```python
+# models/__init__.py
+Asset.last_maintenance_at = column_property(
+    select(func.max(MaintenanceLog.performed_at))
+    .where(MaintenanceLog.asset_id == Asset.id)
+    .correlate_except(MaintenanceLog)
+    .scalar_subquery()
+)
+```
+
+Artık her varlık satırıyla birlikte tek sorguda geliyor.
+
+> ⚠️ Bu tanım neden `asset.py`'de değil `models/__init__.py`'de?
+> `asset.py`, `maintenance.py`'yi import etseydi, `maintenance.py` de
+> `asset.py`'yi import ettiği için **döngüsel import** olurdu. İki model de
+> yüklendikten sonra bağlıyoruz.
+
+**İlişki yönleri:**
+
+| Terim | Anlamı |
+|---|---|
+| `relationship()` | Python tarafındaki bağlantı (SQL'de karşılığı yok) |
+| `back_populates` | İki yönlü bağlantı: `asset.maintenance_logs` ↔ `log.asset` |
+| `cascade="all, delete-orphan"` | Python tarafında silme davranışı |
+| `ondelete="CASCADE"` | **Veritabanı** tarafında silme davranışı |
+| `lazy="joined"` | İlişkiyi JOIN ile birlikte çek (ayrı sorgu atma) |
+
 ---
 
-## 3.5 Swagger (`/docs`) — Kullanım Rehberi
+### 3.6 Kimlik Doğrulama ve Yetkilendirme
+
+İki farklı kavram, sık karıştırılır:
+
+| | Soru | HTTP kodu |
+|---|---|---|
+| **Authentication** (kimlik doğrulama) | "Sen kimsin?" | 401 Unauthorized |
+| **Authorization** (yetkilendirme) | "Bunu yapabilir misin?" | 403 Forbidden |
+
+401 = "seni tanımıyorum, giriş yap". 403 = "seni tanıyorum ama bu iş sana kapalı".
+
+#### Parola nasıl saklanır?
+
+**Asla düz metin olarak saklanmaz.** bcrypt kullanıyoruz:
+
+```python
+ozet = bcrypt.hashpw(parola.encode(), bcrypt.gensalt())
+dogru_mu = bcrypt.checkpw(parola.encode(), ozet)
+```
+
+- **Tek yönlü:** özetten parolaya dönülemez
+- **Tuz (salt):** her özet rastgele bir tuz içerir → aynı parola iki kullanıcıda
+  farklı özet üretir → hazır özet tabloları (rainbow table) işe yaramaz
+- **Yavaş olması özellik:** bcrypt bilerek yavaştır, kaba kuvvet saldırısını zorlaştırır
+
+#### JWT (JSON Web Token) nedir?
+
+Giriş yaptıktan sonra verilen "bilet". Üç parçadan oluşur, noktayla ayrılır:
+
+```
+eyJhbGciOiJIUzI1NiJ9 . eyJzdWIiOiIxMjMiLCJyb2xlIjoiQURNSU4ifQ . SflKxwRJSMeKKF2QT4f
+└──── header ────┘   └────────── payload ──────────┘   └──── signature ────┘
+     algoritma              içerik (kim, rol, süre)          imza
+```
+
+🚨 **En kritik nokta: payload ŞİFRELİ DEĞİL, sadece İMZALI.**
+Herkes base64 çözüp içindekini okuyabilir; kimse **değiştiremez** (imza tutmaz).
+Bu yüzden token'a gizli bilgi konmaz — kullanıcı adı ve rol yazmakta sakınca yok.
+
+**Sunucu oturum saklamaz.** Token'ın kendisi kanıttır; sunucu sadece imzayı
+doğrular. Buna *stateless* denir.
+
+#### FastAPI'de nasıl kuruluyor?
+
+```python
+# Bağımlılık (dependency): token'ı çöz, kullanıcıyı bul
+def get_current_user(token = Depends(oauth2_scheme), db = Depends(get_db)) -> User:
+    icerik = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+    return db.get(User, uuid.UUID(icerik["sub"]))
+
+# Bir ucu korumak tek satır:
+@router.delete("/{id}", dependencies=[Depends(require_admin)])
+```
+
+Bu projede koruma **tek tek uçlara değil router'a** bağlı:
+
+```python
+app.include_router(assets.router, dependencies=[Depends(get_current_user)])
+```
+
+Böylece yeni bir uç eklendiğinde korumayı yazmayı unutmak mümkün değil —
+varsayılan kapalı, açmak için bilinçli çaba gerekir.
+
+#### Bilmen gereken 4 güvenlik kuralı
+
+1. **"Kullanıcı yok" ile "parola yanlış" AYNI mesajı dönmeli.** Farklı olursa
+   saldırgan hangi kullanıcı adlarının var olduğunu tek tek deneyerek öğrenir
+   (*user enumeration*).
+2. **Yetkiyi token'daki role değil veritabanına sorarak kontrol et.** Token
+   12 saat geçerli; o sürede kullanıcı pasifleştirilmiş olabilir.
+3. **Arayüzde buton gizlemek güvenlik değildir.** Kullanıcı deneyimidir.
+   Asıl koruma sunucuda olmalı — istemci kodu değiştirilebilir.
+4. **`SECRET_KEY` gizli kalmalı.** Anahtarı bilen herkes geçerli token
+   üretebilir. Üretimde `.env`'den gelmeli, koda yazılmamalı.
+
+#### Frontend tarafı
+
+```js
+// Her isteğe bileti ekle
+client.interceptors.request.use((config) => {
+  config.headers.Authorization = `Bearer ${token}`
+  return config
+})
+
+// 401 gelirse oturumu kapat
+if (error.response.status === 401) oturumuSonlandir()
+```
+
+> **Token nerede saklanır?** Bu projede `localStorage` (sayfa yenilenince
+> oturum kaybolmasın diye). ⚠️ `localStorage` XSS'e karşı korumasızdır —
+> sayfaya kötü script enjekte edilirse token okunabilir. Daha güvenli yol
+> **HttpOnly cookie**'dir; JavaScript onu okuyamaz. Bu projede basitlik için
+> `localStorage` seçildi ve bu bilinçli bir ödün.
+
+---
+
+## 3.7 Swagger (`/docs`) — Kullanım Rehberi
 
 **http://localhost:8000/docs**
 
@@ -323,9 +468,14 @@ Dokümantasyonu birine göstereceksen ReDoc daha derli toplu görünür.
 | **zod** + `@hookform/resolvers` | Şema doğrulama | `z.object({...})`, `zodResolver` |
 | **@tanstack/react-query** | Sunucu verisi | `useQuery`, `useMutation`, `invalidateQueries` |
 | **axios** | HTTP | `axios.create({ baseURL })`, interceptor |
-| **recharts** | Grafik | `PieChart`, `BarChart`, `ResponsiveContainer` |
-| **lucide-react** | İkon | `<TreePine />`, `<Lightbulb />` |
+| **recharts** v2 | Grafik | `BarChart`, `AreaChart`, `ResponsiveContainer`, `isAnimationActive` |
+| **react-i18next** | Çoklu dil | `useTranslation()`, `t('anahtar')`, `changeLanguage()` |
+| **@fontsource/\*** | Self-host font | CDN'e bağımlı kalmamak için |
 | **react-hot-toast** | Bildirim | `toast.success('Eklendi')` |
+
+> İkon için `lucide-react` yerine **Material Symbols SVG'leri** tek tek inline
+> ediliyor (`src/components/ui/Icon.jsx`). Sebep: variable font 7792 ikon
+> içeriyor ve **3.96 MB**; biz 35 tanesini kullanıyoruz → ~8 KB.
 
 ### 4.3 MapLibre'de bilmen gereken kavramlar
 
@@ -423,6 +573,23 @@ dist/
 | `psycopg` derleme hatası (Windows) | Yanlış paket | `psycopg[binary]` kur, ya da Docker kullan |
 | Alembic geometri kolonunu her seferinde siliyor | GeoAlchemy2 uyumsuzluğu | `alembic/env.py` içinde `include_object` ile `spatial_ref_sys` tablosunu hariç tut |
 
+### Bu projede gerçekten karşılaştıklarımız
+
+Aşağıdakiler teorik değil — hepsi bu projede başımıza geldi ve saatler yedi.
+
+| Hata | Sebep | Çözüm |
+|---|---|---|
+| `bg-${degisken}` rengi hiç çıkmıyor | Tailwind sınıf adlarını kaynak kodda **metin olarak** arar; dinamik isimler hiç üretilmez | Sınıfları tam metin olarak yaz, nesnede sakla |
+| Tablo kaydırılmıyor, satırlar kırpılıyor | Flexbox: `flex-1` olan öğe varsayılan `min-height:auto` ile içeriğinden küçülemez | Kaydırılacak kutuya **`min-h-0`** ekle |
+| Recharts barları hiç çizilmiyor | Büyüme animasyonu `requestAnimationFrame` ile; sekme arka plandaysa rAF durur, bar sıfır genişlikte kalır | `isAnimationActive={false}` |
+| MapLibre `does not provide an export named 'default'` | v6 varsayılan export'u kaldırdı | Kararlı **v5** kullan (tüm dokümantasyon da onu anlatıyor) |
+| Harita katmanları hiç eklenmiyor | Tema `useEffect`'i ilk render'da da `setStyle()` çağırıp yükleme zincirini bozuyor; `styledata` olayında `isStyleLoaded()` hep `false` | İlk render'ı atla + **`style.load`** olayını kullan |
+| `GET /assets/nearby` → 422 | `GET /assets/{id}` daha önce kayıtlı; "nearby" kelimesi UUID sanılıyor | Özel yolları `/{id}`'den **ÖNCE** kaydet |
+| Nominatim detaylı adresi bulamıyor | Serbest metni bütün olarak eşleştiriyor; karşılığı olmayan tek kelime sonucu sıfırlıyor | Sonuç boşsa sondan bir kelime atıp tekrar dene |
+| Excel'de `Ã‡Ä±nar` görünüyor | CSV'de UTF-8 BOM yok | Dosyanın başına BOM ekle, ayraç olarak `;` kullan |
+| PowerShell'le düzenlenen dosyada Türkçe bozuluyor | PS 5.1 `Get-Content` varsayılan ANSI okur | Kaynak dosyaları PowerShell ile düzenleme |
+| Alembic `type "asset_status" already exists` | Enum başka migration'da oluşturulmuş | `postgresql.ENUM(..., create_type=False)` |
+
 ---
 
 ## 8. Kaynaklar
@@ -441,6 +608,12 @@ dist/
 | Recharts | https://recharts.org/en-US/examples |
 | GeoJSON spesifikasyonu (RFC 7946) | https://datatracker.ietf.org/doc/html/rfc7946 |
 | Conventional Commits | https://www.conventionalcommits.org/tr/ |
+| FastAPI güvenlik / OAuth2 | https://fastapi.tiangolo.com/tutorial/security/ |
+| JWT nasıl çalışır (kurcala) | https://jwt.io |
+| bcrypt neden yavaş olmalı | https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html |
+| SQLAlchemy ilişkiler | https://docs.sqlalchemy.org/en/20/orm/relationships.html |
+| Nominatim kullanım politikası | https://operations.osmfoundation.org/policies/nominatim/ |
+| Recharts örnekler | https://recharts.org/en-US/examples |
 
 ---
 
@@ -464,3 +637,34 @@ dist/
 **"Katmanlı mimariden ne anlıyorsun?"**
 > API katmanı HTTP'yi bilir, CRUD katmanı veritabanını bilir, model katmanı tabloyu tanımlar.
 > Bu sayede yarın FastAPI'yi bırakıp başka framework'e geçsem CRUD katmanım aynen kalır.
+
+**"JWT nasıl çalışıyor, oturumu nerede saklıyorsun?"**
+> Hiçbir yerde — *stateless*. Token'ın kendisi kanıt: içinde kullanıcı kimliği
+> ve rol yazıyor, sunucunun gizli anahtarıyla imzalı. Sunucu her istekte imzayı
+> doğruluyor. İçerik şifreli değil, sadece imzalı; herkes okuyabilir ama kimse
+> değiştiremez. Bu yüzden token'a gizli bilgi koymuyorum. Yetki kontrolünde
+> token'daki role değil veritabanına bakıyorum, çünkü token 12 saat geçerli ve
+> o sürede kullanıcının rolü değişmiş olabilir.
+
+**"Parolaları nasıl saklıyorsun?"**
+> Saklamıyorum — bcrypt özetini saklıyorum. Tek yönlü, geri döndürülemez.
+> Her özet rastgele bir tuz içeriyor, o yüzden aynı parolaya sahip iki kullanıcının
+> özeti farklı; hazır özet tabloları işe yaramıyor. bcrypt'in yavaş olması da
+> kasıtlı, kaba kuvvet saldırısını zorlaştırıyor.
+
+**"Arayüzde silme butonunu gizledin, bu yeterli mi?"**
+> Hayır, o sadece kullanıcı deneyimi — saha ekibi basıp hata almasın diye.
+> Asıl koruma sunucuda: `require_admin` bağımlılığı. Test ettim, saha rolüyle
+> DELETE isteği 403 dönüyor. İstemci kodu değiştirilebilir, sunucu değiştirilemez.
+
+**"N+1 problemi nedir, karşılaştın mı?"**
+> Evet. 25 varlık listelerken her biri için "son bakım tarihi" ayrı sorguyla
+> çekilseydi 26 sorgu atılırdı. `column_property` + `scalar_subquery` ile
+> alt sorguyu ana sorguya gömdüm; tek sorguda geliyor.
+
+**"Renk seçimlerini neye göre yaptın?"**
+> Durum renklerini renk körlüğü doğrulayıcısından geçirdim. Koyu tema paleti
+> **reddedildi**: protanopi altında yeşil ile amber arasındaki fark ΔE 7.3'tü,
+> eşik 8. Yani kırmızı-yeşil renk körü biri "İyi" ile "Bakım Lazım"ı ayırt
+> edemeyecekti. Yeşili koyulaştırıp amberi açarak ΔE 17.5'e çıkardım.
+> Ayrıca renk hiçbir yerde tek başına bilgi taşımıyor, her zaman metinle birlikte.
