@@ -6,12 +6,45 @@ import { useCallback, useEffect, useRef } from 'react'
 
 import {
   ALTLIKLAR,
+  CIZIM_KAYNAK_ID,
+  CIZIM_RENGI,
   durumRengiIfadesi,
   KATMAN,
   KAYNAK_ID,
   KUME_RENGI,
   KUME_YARICAPI,
 } from './mapStyles'
+
+/** Boş bir GeoJSON — kaynaklar veri gelmeden önce bununla kuruluyor. */
+const BOS_KOLEKSIYON = { type: 'FeatureCollection', features: [] }
+
+/** Çizilen köşelerden görüntülenecek GeoJSON'u üretir. */
+function cizimGeoJSON(koseler) {
+  const ozellikler = koseler.map((k, i) => ({
+    type: 'Feature',
+    geometry: { type: 'Point', coordinates: k },
+    properties: { ilk: i === 0 },
+  }))
+
+  if (koseler.length >= 2) {
+    ozellikler.push({
+      type: 'Feature',
+      geometry: { type: 'LineString', coordinates: koseler },
+      properties: {},
+    })
+  }
+
+  // Poligon en az 3 köşeyle anlamlı; ilk köşeyi sona ekleyerek halkayı kapatıyoruz
+  if (koseler.length >= 3) {
+    ozellikler.push({
+      type: 'Feature',
+      geometry: { type: 'Polygon', coordinates: [[...koseler, koseler[0]]] },
+      properties: {},
+    })
+  }
+
+  return { type: 'FeatureCollection', features: ozellikler }
+}
 
 /**
  * MapLibre haritası.
@@ -37,6 +70,12 @@ export default function MapView({
   onViewportChange,
   seciliId,
   ucKoordinat,
+  cizimModu = false,
+  onPolygonComplete,
+  onKoseSayisiChange,
+  // Bu sayı her arttığında çizim temizlenir. Fonksiyon prop'u yerine sayaç
+  // kullanmak, üst bileşenin ref tutmasına gerek bırakmıyor.
+  temizleSayaci = 0,
 }) {
   const kapsayici = useRef(null)
   const harita = useRef(null)
@@ -44,6 +83,12 @@ export default function MapView({
   // Katmanlar eklendi mi? Tema değişiminde tekrar eklemek için gerekli.
   const veriRef = useRef(geojson)
   veriRef.current = geojson
+
+  // Çizim durumu ref'te tutuluyor, state'te değil: harita olay dinleyicileri
+  // bir kez bağlanıyor ve state'in güncel değerini göremez (stale closure).
+  const koselerRef = useRef([])
+  const cizimModuRef = useRef(cizimModu)
+  cizimModuRef.current = cizimModu
 
   /** Kaynak ve katmanları ekler. Hem ilk yüklemede hem tema değişiminde çağrılır. */
   const katmanlariEkle = useCallback(
@@ -119,9 +164,57 @@ export default function MapView({
           'circle-stroke-color': koyu ? '#79db8d' : '#00652c',
         },
       })
+
+      // --- Alan çizme aracı ---
+      // Ayrı bir kaynak: varlık noktalarıyla karışmasın, kümelenmesin.
+      map.addSource(CIZIM_KAYNAK_ID, {
+        type: 'geojson',
+        data: cizimGeoJSON(koselerRef.current),
+      })
+
+      map.addLayer({
+        id: KATMAN.cizimDolgu,
+        type: 'fill',
+        source: CIZIM_KAYNAK_ID,
+        filter: ['==', ['geometry-type'], 'Polygon'],
+        paint: { 'fill-color': CIZIM_RENGI(koyu), 'fill-opacity': 0.15 },
+      })
+
+      map.addLayer({
+        id: KATMAN.cizimCizgi,
+        type: 'line',
+        source: CIZIM_KAYNAK_ID,
+        filter: ['in', ['geometry-type'], ['literal', ['LineString', 'Polygon']]],
+        paint: {
+          'line-color': CIZIM_RENGI(koyu),
+          'line-width': 2,
+          'line-dasharray': [2, 1],
+        },
+      })
+
+      map.addLayer({
+        id: KATMAN.cizimKose,
+        type: 'circle',
+        source: CIZIM_KAYNAK_ID,
+        filter: ['==', ['geometry-type'], 'Point'],
+        paint: {
+          // İlk köşe daha büyük: kullanıcı nereye tıklayıp kapatacağını görsün
+          'circle-radius': ['case', ['get', 'ilk'], 8, 5],
+          'circle-color': koyu ? '#0e120d' : '#ffffff',
+          'circle-stroke-width': 2.5,
+          'circle-stroke-color': CIZIM_RENGI(koyu),
+        },
+      })
     },
     [koyu],
   )
+
+  /** Çizim katmanını günceller. */
+  const cizimiCiz = useCallback(() => {
+    const kaynak = harita.current?.getSource(CIZIM_KAYNAK_ID)
+    kaynak?.setData(cizimGeoJSON(koselerRef.current))
+    onKoseSayisiChange?.(koselerRef.current.length)
+  }, [onKoseSayisiChange])
 
   // Olay dinleyicileri sadece bir kez bağlanıyor ve ilk render'daki
   // katmanlariEkle'yi yakalıyor. Tema değişince o fonksiyon yenilenir ama
@@ -189,6 +282,7 @@ export default function MapView({
     if (!map) return
 
     const kumeyeTikla = (e) => {
+      if (cizimModuRef.current) return // çizim sırasında zoom yapma
       const ozellik = e.features?.[0]
       if (!ozellik) return
       map
@@ -201,6 +295,7 @@ export default function MapView({
     }
 
     const noktayaTikla = (e) => {
+      if (cizimModuRef.current) return // çizim sırasında varlık paneli açma
       const ozellik = e.features?.[0]
       if (!ozellik) return
       // Haritanın genel tıklamasını tetiklemesin (forma koordinat yazmasın)
@@ -208,7 +303,38 @@ export default function MapView({
       onFeatureClick?.(ozellik.properties, ozellik.geometry.coordinates)
     }
 
+    /**
+     * Çizim modunda tıklama: köşe ekler, ilk köşeye tıklanınca alanı kapatır.
+     *
+     * Kapatma toleransı ekranda 14 piksel — koordinat karşılaştırması yapmak
+     * yerine ekran mesafesine bakıyoruz, çünkü zoom seviyesine göre aynı
+     * koordinat farkı çok farklı piksel mesafesine denk geliyor.
+     */
+    const cizimeTikla = (e) => {
+      const koseler = koselerRef.current
+      const yeni = [e.lngLat.lng, e.lngLat.lat]
+
+      if (koseler.length >= 3) {
+        const ilkNokta = map.project(koseler[0])
+        const mesafe = Math.hypot(ilkNokta.x - e.point.x, ilkNokta.y - e.point.y)
+        if (mesafe < 14) {
+          onPolygonComplete?.({
+            type: 'Polygon',
+            coordinates: [[...koseler, koseler[0]]],
+          })
+          return
+        }
+      }
+
+      koselerRef.current = [...koseler, yeni]
+      cizimiCiz()
+    }
+
     const bosalanaTikla = (e) => {
+      if (cizimModuRef.current) {
+        cizimeTikla(e)
+        return
+      }
       // Nokta veya küme üzerinde miyiz?
       const ustundekiler = map.queryRenderedFeatures(e.point, {
         layers: [KATMAN.noktalar, KATMAN.kumeler],
@@ -218,12 +344,26 @@ export default function MapView({
       }
     }
 
+    /** Çift tıklama: en az 3 köşe varsa alanı tamamlar. */
+    const cizimiBitir = (e) => {
+      if (!cizimModuRef.current) return
+      e.preventDefault()
+      const koseler = koselerRef.current
+      if (koseler.length >= 3) {
+        onPolygonComplete?.({
+          type: 'Polygon',
+          coordinates: [[...koseler, koseler[0]]],
+        })
+      }
+    }
+
     const imlecEl = () => (map.getCanvas().style.cursor = 'pointer')
     const imlecNormal = () => (map.getCanvas().style.cursor = '')
 
     map.on('click', KATMAN.kumeler, kumeyeTikla)
     map.on('click', KATMAN.noktalar, noktayaTikla)
     map.on('click', bosalanaTikla)
+    map.on('dblclick', cizimiBitir)
     map.on('mouseenter', KATMAN.kumeler, imlecEl)
     map.on('mouseleave', KATMAN.kumeler, imlecNormal)
     map.on('mouseenter', KATMAN.noktalar, imlecEl)
@@ -237,8 +377,26 @@ export default function MapView({
       map.off('mouseleave', KATMAN.kumeler, imlecNormal)
       map.off('mouseenter', KATMAN.noktalar, imlecEl)
       map.off('mouseleave', KATMAN.noktalar, imlecNormal)
+      map.off('dblclick', cizimiBitir)
     }
-  }, [onMapClick, onFeatureClick])
+  }, [onMapClick, onFeatureClick, onPolygonComplete, cizimiCiz])
+
+  /* --- Çizim modu açılıp kapanınca --- */
+  useEffect(() => {
+    const map = harita.current
+    if (!map) return
+
+    // Çizim modunda artı imleci + çift tıkla zoom kapalı olmalı,
+    // yoksa alanı bitirmek isterken harita yakınlaşır.
+    map.getCanvas().style.cursor = cizimModu ? 'crosshair' : ''
+    if (cizimModu) map.doubleClickZoom.disable()
+    else map.doubleClickZoom.enable()
+
+    if (cizimModu) {
+      koselerRef.current = []
+      cizimiCiz()
+    }
+  }, [cizimModu, cizimiCiz])
 
   /* --- Veri değişince kaynağı güncelle (haritayı yeniden kurmadan) --- */
   useEffect(() => {
@@ -267,6 +425,17 @@ export default function MapView({
     if (!map?.getLayer(KATMAN.secili)) return
     map.setFilter(KATMAN.secili, ['==', ['get', 'id'], seciliId ?? ''])
   }, [seciliId])
+
+  /* --- Çizimi temizle --- */
+  const ilkTemizle = useRef(true)
+  useEffect(() => {
+    if (ilkTemizle.current) {
+      ilkTemizle.current = false
+      return
+    }
+    koselerRef.current = []
+    cizimiCiz()
+  }, [temizleSayaci, cizimiCiz])
 
   /* --- Tablodan "haritada göster" denince o noktaya uç --- */
   useEffect(() => {

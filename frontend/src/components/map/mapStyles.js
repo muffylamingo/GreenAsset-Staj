@@ -13,12 +13,21 @@ export const ALTLIKLAR = {
 }
 
 export const KAYNAK_ID = 'assets'
+export const CIZIM_KAYNAK_ID = 'draw'
+
 export const KATMAN = {
   kumeler: 'assets-clusters',
   kumeSayisi: 'assets-cluster-count',
   noktalar: 'assets-points',
   secili: 'assets-selected',
+  // Alan çizme aracının katmanları
+  cizimDolgu: 'draw-fill',
+  cizimCizgi: 'draw-line',
+  cizimKose: 'draw-vertices',
 }
+
+/** Çizim aracının rengi — varlık renkleriyle karışmasın diye teal. */
+export const CIZIM_RENGI = (koyu) => (koyu ? '#6bd8cb' : '#006a61')
 
 /**
  * Duruma göre nokta rengi — MapLibre "match" ifadesi.

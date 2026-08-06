@@ -8,7 +8,7 @@
 ## Genel Durum
 
 ```
-███████████████████████████████████░░░░░  87%
+██████████████████████████████████████░░  95%
 ```
 
 | # | Aşama | Ağırlık | Durum | Tamamlanma |
@@ -18,10 +18,13 @@
 | 2 | Backend REST API | 25% | ✅ Bitti | `██████████` 100% |
 | 3 | Frontend — form & tablo | 20% | ✅ Bitti | `██████████` 100% |
 | 4 | Harita entegrasyonu | 15% | ✅ Bitti | `██████████` 100% |
-| 5 | Analiz & raporlama | 15% | 🟡 Backend bitti | `█████░░░░░` 50% |
+| 5 | Analiz & raporlama | 15% | ✅ Bitti | `██████████` 100% |
 | 6 | Cila & teslim | 5% | ⚪ Başlanmadı | `░░░░░░░░░░` 0% |
 
-**Hesap:** 5 + 15 + 25 + 20 + 15 + (15 × 0.5) = **87%**
+**Hesap:** 5 + 15 + 25 + 20 + 15 + 15 = **95%**
+
+> Ödevin istediği **5 aşamanın tamamı bitti.** Kalan %5 teslim hazırlığı:
+> Docker, README, testler ve ek paket seçimi.
 
 ---
 
@@ -200,14 +203,35 @@
 | CSV export | UTF-8 BOM ✓ · 93 kayıt (stats ile tutarlı) · Türkçe karakterler doğru |
 | GeoJSON export | 67 özellik (stats ile tutarlı) |
 
-### Frontend
-- [ ] Dashboard — 4 KPI kartı + trend göstergeleri
-- [ ] Recharts: tipe göre donut
-- [ ] Recharts: ilçeye göre yığılmış bar
-- [ ] Recharts: zamana göre alan grafiği (12M/6M/30D)
-- [ ] Harita üzerinde polygon çizme aracı
-- [ ] Çizilen alan → `ST_Within` → sonuç tabloda
-- [ ] CSV / GeoJSON indirme butonları
+### Frontend ✅ bitti
+- [x] Dashboard — 4 KPI kartı + trend göstergeleri
+- [x] Tipe göre: yatay bar, tek renk *(donut yerine — nominal kategori)*
+- [x] Duruma göre: yığılmış bar + yüzdeler
+- [x] İlçeye göre: yatay bar
+- [x] Zamana göre alan grafiği (12 / 6 / 3 ay seçici)
+- [x] Her grafiğin altında açılır **tablo görünümü** (erişilebilirlik)
+- [x] Harita üzerinde **polygon çizme aracı** (ekstra kütüphane yok)
+- [x] Çizilen alan → `ST_Within` → sonuç kartında durum kırılımı
+- [x] CSV / GeoJSON indirme butonları
+
+**Renk körlüğü doğrulaması:** koyu tema durum paleti reddedildi
+(protanopide yeşil↔amber ΔE 7.3, eşik 8). Yeşil koyulaştırılıp amber
+açılarak ΔE 17.5'e çıkarıldı → `#178a48 / #ffc94d / #f76b6b`
+
+**Tarayıcıda doğrulandı:**
+
+| Test | Sonuç |
+|---|---|
+| KPI kartları | 1.475 · 334 · 93 · 1.475 |
+| Tipe göre bar | 685 / 291 / 285 / 147 / 67 (API ile birebir) |
+| Yığılmış durum barı | 349 : 111 : 31 px = %71 / %22.6 / %6.3 |
+| Alan çizimi (4 köşe + kapatma) | **"Seçilen alanda 71 varlık — İyi 57, Bakım Lazım 14"** |
+| Aynı poligonun API sonucu | 71 / 57 / 14 — **birebir aynı** |
+| Alanı temizle | Sonuç kartı sıfırlandı |
+
+> ⚠️ Grafiklerde `isAnimationActive={false}`: Recharts büyüme animasyonunu
+> `requestAnimationFrame` ile yapıyor. Uygulama arka plan sekmesinde açılırsa
+> rAF durur ve **grafikler boş görünür**. Dashboard'da veri anında görünmeli.
 
 ---
 

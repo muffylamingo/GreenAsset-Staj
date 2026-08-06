@@ -2,7 +2,14 @@ import { useCallback, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { useAssetsGeoJSON } from '../../hooks/useAssets'
-import { ASSET_TYPES, ASSET_TYPE_KEYS, STATUS_KEYS } from '../../theme/statusColors'
+import { useWithinQuery } from '../../hooks/useStats'
+import {
+  ASSET_TYPES,
+  ASSET_TYPE_KEYS,
+  STATUS_HEX,
+  STATUS_KEYS,
+} from '../../theme/statusColors'
+import Button from '../ui/Button'
 import Icon from '../ui/Icon'
 import { ErrorState } from '../ui/States'
 import MapLegend from './MapLegend'
@@ -28,6 +35,12 @@ export default function MapPage({
   const [arama, setArama] = useState('')
   // Haritanın görünen alanı [minLon, minLat, maxLon, maxLat]
   const [bbox, setBbox] = useState(null)
+
+  // --- Alan çizme durumu ---
+  const [cizimModu, setCizimModu] = useState(false)
+  const [koseSayisi, setKoseSayisi] = useState(0)
+  const [temizleSayaci, setTemizleSayaci] = useState(0)
+  const alanSorgusu = useWithinQuery()
 
   // Haritada tüm noktaları istiyoruz; kümeleme performansı MapLibre hallediyor.
   // limit'i yüksek tutuyoruz ama sınırsız değil — 5000 backend'in üst sınırı.
@@ -73,6 +86,45 @@ export default function MapPage({
   const durumDegistir = (durum) =>
     setDurumlar((o) => (o.includes(durum) ? o.filter((x) => x !== durum) : [...o, durum]))
 
+  /* --- Alan sorgusu --- */
+
+  const cizimBaslat = () => {
+    alanSorgusu.reset()
+    setKoseSayisi(0)
+    setCizimModu(true)
+  }
+
+  const cizimIptal = () => {
+    setCizimModu(false)
+    setKoseSayisi(0)
+    setTemizleSayaci((s) => s + 1)
+  }
+
+  const alaniTemizle = () => {
+    alanSorgusu.reset()
+    setTemizleSayaci((s) => s + 1)
+  }
+
+  // useCallback: MapView bunu olay dinleyicisi bağımlılığı olarak kullanıyor
+  const poligonTamamlandi = useCallback(
+    (polygon) => {
+      setCizimModu(false)
+      alanSorgusu.mutate({
+        polygon,
+        filtreler: {
+          types: tipler.length ? tipler : undefined,
+          statuses: durumlar.length ? durumlar : undefined,
+        },
+      })
+    },
+    // alanSorgusu her render'da yeni nesne; mutate kararlı olduğu için
+    // sadece onu bağımlılığa alıyoruz
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [tipler, durumlar, alanSorgusu.mutate],
+  )
+
+  const alanSonucu = alanSorgusu.data
+
   if (isError) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -91,6 +143,10 @@ export default function MapPage({
         onViewportChange={gorunumDegisti}
         seciliId={seciliId}
         ucKoordinat={ucKoordinat}
+        cizimModu={cizimModu}
+        onPolygonComplete={poligonTamamlandi}
+        onKoseSayisiChange={setKoseSayisi}
+        temizleSayaci={temizleSayaci}
       />
 
       {/* --- Üst orta: arama + filtre chip'leri --- */}
@@ -149,11 +205,96 @@ export default function MapPage({
         </div>
       </div>
 
-      {/* --- Sol üst: haritaya tıklama ipucu --- */}
-      <div className="pointer-events-none absolute left-margin-page top-margin-page z-20">
+      {/* --- Sol üst: ipucu + alan sorgusu aracı --- */}
+      <div className="absolute left-margin-page top-margin-page z-20 w-72 space-y-2">
         <div className="flex items-center gap-2 rounded-xl border border-outline-variant/40 bg-surface/90 px-3 py-2 shadow-lg backdrop-blur-md">
-          <Icon name="touch_app" className="text-[16px] text-primary" />
-          <span className="text-body-sm text-on-surface-variant">{t('map.clickHint')}</span>
+          <Icon
+            name={cizimModu ? 'draw' : 'touch_app'}
+            className="shrink-0 text-[16px] text-primary"
+          />
+          <span className="text-body-sm text-on-surface-variant">
+            {cizimModu ? t('spatial.drawing') : t('map.clickHint')}
+          </span>
+        </div>
+
+        {/* Alan sorgusu kartı — ödevin ST_Within şartının arayüz tarafı */}
+        <div className="rounded-xl border border-outline-variant/40 bg-surface/95 p-3 shadow-lg backdrop-blur-md">
+          <h3 className="mb-1 flex items-center gap-1.5 text-label-md uppercase tracking-wider text-on-surface-variant">
+            <Icon name="draw" className="text-[14px]" />
+            {t('spatial.drawTitle')}
+          </h3>
+
+          {!cizimModu && !alanSonucu && (
+            <>
+              <p className="mb-2 text-body-sm text-on-surface-variant">
+                {t('spatial.drawHint')}
+              </p>
+              <Button size="sm" icon="draw" fullWidth onClick={cizimBaslat}>
+                {t('spatial.drawStart')}
+              </Button>
+            </>
+          )}
+
+          {cizimModu && (
+            <>
+              <p className="nums mb-2 text-body-sm text-on-surface-variant">
+                {koseSayisi} / 3+
+              </p>
+              <Button size="sm" variant="outlined" icon="close" fullWidth onClick={cizimIptal}>
+                {t('spatial.drawCancel')}
+              </Button>
+            </>
+          )}
+
+          {!cizimModu && alanSonucu && (
+            <>
+              {alanSorgusu.isPending ? (
+                <p className="text-body-sm text-on-surface-variant">{t('common.loading')}</p>
+              ) : alanSonucu.totalCount === 0 ? (
+                <p className="mb-2 text-body-sm text-on-surface-variant">
+                  {t('spatial.noResult')}
+                </p>
+              ) : (
+                <>
+                  <p className="mb-1 text-body-sm text-on-surface-variant">
+                    {t('spatial.resultTitle')}
+                  </p>
+                  <p className="nums mb-2 text-headline-md text-on-surface">
+                    {t('spatial.resultCount', { count: alanSonucu.totalCount })}
+                  </p>
+
+                  {/* Durum kırılımı — renk tek başına bilgi taşımasın diye
+                      her satırda renk + metin + sayı birlikte */}
+                  <ul className="mb-3 space-y-1">
+                    {STATUS_KEYS.filter((d) => alanSonucu.countsByStatus[d]).map((durum) => (
+                      <li
+                        key={durum}
+                        className="flex items-center gap-1.5 text-body-sm text-on-surface-variant"
+                      >
+                        <span
+                          className="h-2 w-2 shrink-0 rounded-full"
+                          style={{ backgroundColor: STATUS_HEX[durum] }}
+                        />
+                        {t(`status.${durum}`)}
+                        <span className="nums ml-auto font-semibold text-on-surface">
+                          {alanSonucu.countsByStatus[durum]}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
+
+              <div className="flex gap-1.5">
+                <Button size="sm" variant="outlined" icon="close" onClick={alaniTemizle}>
+                  {t('spatial.clearArea')}
+                </Button>
+                <Button size="sm" variant="ghost" icon="draw" onClick={cizimBaslat}>
+                  {t('spatial.drawStart')}
+                </Button>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
