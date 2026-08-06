@@ -119,7 +119,8 @@
     "legend": "Map Legend",
     "search": "Search asset or address...",
     "assetsInView": "{{count}} assets in view",
-    "clickHint": "Click on the map to add an asset"
+    "clickHint": "Click on the map to add an asset",
+    "iconHint": "Type icons appear when you zoom in"
   },
   "filters": {
     "all": "All",

@@ -4,11 +4,15 @@
 import maplibregl from 'maplibre-gl'
 import { useCallback, useEffect, useRef } from 'react'
 
+import { ASSET_TYPES } from '../../theme/statusColors'
+import { ikonSvgAl } from '../ui/Icon'
 import {
   ALTLIKLAR,
   CIZIM_KAYNAK_ID,
   CIZIM_RENGI,
   durumRengiIfadesi,
+  IKON_MIN_ZOOM,
+  ikonAdi,
   KATMAN,
   KAYNAK_ID,
   KUME_RENGI,
@@ -17,6 +21,31 @@ import {
 
 /** Boş bir GeoJSON — kaynaklar veri gelmeden önce bununla kuruluyor. */
 const BOS_KOLEKSIYON = { type: 'FeatureCollection', features: [] }
+
+/**
+ * SVG metnini haritanın kullanabileceği piksel verisine çevirir.
+ *
+ * MapLibre ikonları React bileşeni veya SVG olarak alamaz — ham piksel ister.
+ * SVG'yi bir <img>'e yükleyip tuvale çiziyor, oradan ImageData alıyoruz.
+ *
+ * pixelRatio 2: retina ekranlarda bulanık görünmesin diye 2 kat çözünürlükte
+ * çizip haritaya "bu görsel 2x" diyoruz.
+ */
+function svgdenGorsel(svgMetni, boyut = 22, oran = 2) {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => {
+      const tuval = document.createElement('canvas')
+      tuval.width = boyut * oran
+      tuval.height = boyut * oran
+      const ctx = tuval.getContext('2d')
+      ctx.drawImage(img, 0, 0, tuval.width, tuval.height)
+      resolve(ctx.getImageData(0, 0, tuval.width, tuval.height))
+    }
+    img.onerror = reject
+    img.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svgMetni)}`
+  })
+}
 
 /** Çizilen köşelerden görüntülenecek GeoJSON'u üretir. */
 function cizimGeoJSON(koseler) {
@@ -90,10 +119,37 @@ export default function MapView({
   const cizimModuRef = useRef(cizimModu)
   cizimModuRef.current = cizimModu
 
+  /**
+   * Tip ikonlarını haritaya kaydeder.
+   *
+   * Tema değişiminde stil sıfırlanıp ikonlar da silindiği için her
+   * style.load'da yeniden ekleniyor. Asenkron olması sorun değil: ikon
+   * gelene kadar MapLibre o sembolü çizmiyor, geldiğinde kendiliğinden çiziyor.
+   */
+  const ikonlariYukle = useCallback(async (map) => {
+    await Promise.all(
+      Object.entries(ASSET_TYPES).map(async ([tip, { icon }]) => {
+        const ad = ikonAdi(tip)
+        if (map.hasImage(ad)) return
+        const svg = ikonSvgAl(icon, { boyut: 22, renk: '#ffffff' })
+        if (!svg) return
+        try {
+          const gorsel = await svgdenGorsel(svg)
+          // Ara sürede tema değişip harita sıfırlanmış olabilir
+          if (!map.getStyle() || map.hasImage(ad)) return
+          map.addImage(ad, gorsel, { pixelRatio: 2 })
+        } catch {
+          /* ikon yüklenemezse sembol çizilmez, harita çalışmaya devam eder */
+        }
+      }),
+    )
+  }, [])
+
   /** Kaynak ve katmanları ekler. Hem ilk yüklemede hem tema değişiminde çağrılır. */
   const katmanlariEkle = useCallback(
     (map) => {
       if (map.getSource(KAYNAK_ID)) return
+      ikonlariYukle(map)
 
       map.addSource(KAYNAK_ID, {
         type: 'geojson',
@@ -138,6 +194,7 @@ export default function MapView({
       })
 
       // --- Tekil noktalar ---
+      // Yarıçap zoom'la büyüyor: sokak ölçeğinde içine tip ikonu sığması gerek
       map.addLayer({
         id: KATMAN.noktalar,
         type: 'circle',
@@ -145,9 +202,33 @@ export default function MapView({
         filter: ['!', ['has', 'point_count']],
         paint: {
           'circle-color': durumRengiIfadesi(koyu),
-          'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 4, 16, 8],
+          'circle-radius': [
+            'interpolate',
+            ['linear'],
+            ['zoom'],
+            10, 4,
+            15, 9,
+            18, 13,
+          ],
           'circle-stroke-width': 1.5,
           'circle-stroke-color': koyu ? '#0e120d' : '#ffffff',
+        },
+      })
+
+      // --- Tip ikonları (sadece yakın zoom'da) ---
+      // Renk durumu, ikon tipi anlatıyor. İkonlar beyaz: üç durum renginin
+      // (yeşil/amber/kırmızı) üçünde de okunuyor.
+      map.addLayer({
+        id: KATMAN.tipIkonu,
+        type: 'symbol',
+        source: KAYNAK_ID,
+        filter: ['!', ['has', 'point_count']],
+        minzoom: IKON_MIN_ZOOM,
+        layout: {
+          'icon-image': ['concat', 'varlik-', ['get', 'type']],
+          'icon-size': 0.5,
+          'icon-allow-overlap': true,
+          'icon-ignore-placement': true,
         },
       })
 
@@ -164,6 +245,9 @@ export default function MapView({
           'circle-stroke-color': koyu ? '#79db8d' : '#00652c',
         },
       })
+
+      // Tip ikonu katmanı en üstte kalsın (seçim halkasının da üstünde)
+      if (map.getLayer(KATMAN.tipIkonu)) map.moveLayer(KATMAN.tipIkonu)
 
       // --- Alan çizme aracı ---
       // Ayrı bir kaynak: varlık noktalarıyla karışmasın, kümelenmesin.
@@ -206,7 +290,7 @@ export default function MapView({
         },
       })
     },
-    [koyu],
+    [koyu, ikonlariYukle],
   )
 
   /** Çizim katmanını günceller. */

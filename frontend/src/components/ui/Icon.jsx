@@ -104,6 +104,21 @@ function prepare(rawSvg) {
 
 const CACHE = {}
 
+/**
+ * Ham SVG metnini verir — haritada kullanmak için.
+ *
+ * MapLibre ikonları React bileşeni olarak alamaz; piksel verisi ister.
+ * Bu yüzden SVG'yi dışarı açıyoruz, MapView onu tuvale çizip haritaya ekliyor.
+ */
+export function ikonSvgAl(name, { boyut = 24, renk = '#ffffff' } = {}) {
+  const raw = ICONS[name]
+  if (!raw) return null
+  return raw
+    .replace(/width="\d+"/, `width="${boyut}"`)
+    .replace(/height="\d+"/, `height="${boyut}"`)
+    .replace('<svg ', `<svg fill="${renk}" `)
+}
+
 export default function Icon({ name, className = '', filled = false, ...rest }) {
   const raw = ICONS[name]
 

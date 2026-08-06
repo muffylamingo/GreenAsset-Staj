@@ -40,6 +40,10 @@ export default function MapLegend() {
           </div>
         ))}
       </div>
+
+      <p className="mt-2 border-t border-outline-variant/40 pt-2 text-body-sm italic text-on-surface-variant">
+        {t('map.iconHint')}
+      </p>
     </div>
   )
 }
