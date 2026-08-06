@@ -2,6 +2,7 @@ import { useState } from 'react'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
 
+import { useAuth } from '../../auth/AuthContext'
 import {
   useAssets,
   useBulkDelete,
@@ -30,6 +31,7 @@ const SAYFA_BOYUTLARI = [10, 25, 50, 100]
 
 export default function AssetTable({ onEdit, onAdd, onShowOnMap }) {
   const { t, i18n } = useTranslation()
+  const { yonetici } = useAuth()
 
   // --- Filtre ve sayfalama durumu ---
   const [arama, setArama] = useState('')
@@ -385,12 +387,17 @@ export default function AssetTable({ onEdit, onAdd, onShowOnMap }) {
                           label={t('table.edit')}
                           onClick={() => onEdit(kayit)}
                         />
-                        <SatirButonu
-                          icon="delete"
-                          label={t('table.delete')}
-                          tehlike
-                          onClick={() => setSilinecek(kayit)}
-                        />
+                        {/* Silme sadece yöneticide. Backend zaten 403 döner —
+                            burada gizlemek güvenlik değil, KULLANICI DENEYİMİ:
+                            saha ekibi basıp hata almasın. Asıl koruma sunucuda. */}
+                        {yonetici && (
+                          <SatirButonu
+                            icon="delete"
+                            label={t('table.delete')}
+                            tehlike
+                            onClick={() => setSilinecek(kayit)}
+                          />
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -477,13 +484,15 @@ export default function AssetTable({ onEdit, onAdd, onShowOnMap }) {
             ))}
           </select>
 
-          <button
-            onClick={() => setTopluSilOnayi(true)}
-            className="flex items-center gap-1 text-label-md text-error-container transition-opacity hover:opacity-80"
-          >
-            <Icon name="delete" className="text-[16px]" />
-            {t('table.delete')}
-          </button>
+          {yonetici && (
+            <button
+              onClick={() => setTopluSilOnayi(true)}
+              className="flex items-center gap-1 text-label-md text-error-container transition-opacity hover:opacity-80"
+            >
+              <Icon name="delete" className="text-[16px]" />
+              {t('table.delete')}
+            </button>
+          )}
 
           <button
             onClick={() => setSecili(new Set())}

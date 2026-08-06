@@ -3,7 +3,9 @@ import toast, { Toaster } from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
 
 import { getAsset } from './api/assets'
+import { useAuth } from './auth/AuthContext'
 import AssetForm from './components/assets/AssetForm'
+import LoginPage from './components/auth/LoginPage'
 import AssetTable from './components/assets/AssetTable'
 import DashboardPage from './components/dashboard/DashboardPage'
 import MapPage from './components/map/MapPage'
@@ -28,6 +30,7 @@ const MENU = [
 export default function App() {
   const { t, i18n } = useTranslation()
   const { koyu, temaDegistir } = useTheme()
+  const { kullanici, yukleniyor, cikisYap, yonetici } = useAuth()
 
   const [aktifSayfa, setAktifSayfa] = useState('map')
   const [panelAcik, setPanelAcik] = useState(false)
@@ -85,6 +88,21 @@ export default function App() {
     }
   }, [t])
 
+  // Oturum doğrulanana kadar bekle — yoksa geçerli token'ı olan kullanıcı
+  // bir an giriş ekranını görüp kaybolur, göz tırmalayan bir titreme olur
+  if (yukleniyor) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-background">
+        <p className="flex items-center gap-2 text-body-md text-on-surface-variant">
+          <Icon name="refresh" className="animate-spin text-[20px]" />
+          {t('auth.checking')}
+        </p>
+      </div>
+    )
+  }
+
+  if (!kullanici) return <LoginPage />
+
   return (
     <div className="flex h-screen overflow-hidden bg-background text-on-background">
       {/* ---------- Sol ikon rayı ---------- */}
@@ -133,6 +151,24 @@ export default function App() {
             className="flex w-full justify-center py-4 text-on-surface-variant transition-colors hover:bg-surface-container-high"
           >
             <Icon name={koyu ? 'light_mode' : 'dark_mode'} className="text-[22px]" />
+          </button>
+
+          {/* Oturum: kim giriş yapmış + çıkış */}
+          <button
+            onClick={cikisYap}
+            title={`${kullanici.full_name} (${t(yonetici ? 'auth.roleAdmin' : 'auth.roleField')}) — ${t('auth.logout')}`}
+            className="flex w-full flex-col items-center gap-1 border-t border-outline-variant py-3 text-on-surface-variant transition-colors hover:bg-surface-container-high"
+          >
+            <span
+              className={`flex h-8 w-8 items-center justify-center rounded-full text-label-md ${
+                yonetici
+                  ? 'bg-primary-container text-on-primary-container'
+                  : 'bg-secondary-container text-on-secondary-container'
+              }`}
+            >
+              {kullanici.username.slice(0, 2).toUpperCase()}
+            </span>
+            <span className="text-[10px] leading-none">{t('auth.logout')}</span>
           </button>
         </div>
       </nav>

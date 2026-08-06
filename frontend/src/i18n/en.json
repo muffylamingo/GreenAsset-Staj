@@ -79,6 +79,18 @@
     "showing": "{{from}}-{{to}} of {{total}}",
     "noDistrict": "—"
   },
+  "auth": {
+    "login": "Sign in",
+    "logout": "Sign out",
+    "username": "Username",
+    "password": "Password",
+    "failed": "Sign in failed",
+    "demoAccounts": "Demo accounts (click to fill)",
+    "roleAdmin": "Administrator",
+    "roleField": "Field team",
+    "checking": "Checking session...",
+    "noPermission": "This action requires administrator privileges"
+  },
   "maintenance": {
     "title": "Maintenance History",
     "empty": "No maintenance records yet",

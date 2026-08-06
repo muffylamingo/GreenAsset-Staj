@@ -10,6 +10,7 @@ from sqlalchemy.orm import column_property
 from app.models.asset import Asset, AssetStatus, AssetType
 from app.models.district import District
 from app.models.maintenance import MaintenanceLog
+from app.models.user import User, UserRole
 
 # ---------------------------------------------------------------------------
 # Asset.last_maintenance_at — hesaplanan kolon
@@ -31,4 +32,12 @@ Asset.last_maintenance_at = column_property(
     .scalar_subquery()
 )
 
-__all__ = ["Asset", "AssetStatus", "AssetType", "District", "MaintenanceLog"]
+__all__ = [
+    "Asset",
+    "AssetStatus",
+    "AssetType",
+    "District",
+    "MaintenanceLog",
+    "User",
+    "UserRole",
+]

@@ -18,6 +18,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.deps import require_admin
 from app.models.asset import Asset
 from app.models.maintenance import MaintenanceLog
 from app.schemas.maintenance import MaintenanceLogCreate, MaintenanceLogOut
@@ -101,10 +102,12 @@ def create_log(
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Bakım kaydı sil",
     description=(
+        "⚠️ Yalnızca **yönetici**.\n\n"
         "Kaydı siler. Varlığın durumunu GERİ ALMAZ — bakım gerçekten "
         "yapıldıysa durum doğru; kayıt yanlış girildiyse durumu elle düzeltmek "
         "kullanıcının kararı olmalı."
     ),
+    dependencies=[Depends(require_admin)],
 )
 def delete_log(log_id: uuid.UUID, db: DbSession) -> None:
     kayit = db.get(MaintenanceLog, log_id)

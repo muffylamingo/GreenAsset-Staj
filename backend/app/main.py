@@ -4,13 +4,14 @@
 Swagger:     http://localhost:8000/docs
 """
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
-from app.api.v1 import assets, districts, export, maintenance, spatial, stats
+from app.api.v1 import assets, auth, districts, export, maintenance, spatial, stats
 from app.core.config import settings
 from app.core.database import engine
+from app.core.deps import get_current_user
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -71,13 +72,26 @@ def health():
 
 # --- API router'ları ---
 #
+# Kimlik doğrulama uçları KORUMASIZ olmalı — giriş yapmak için token
+# gerekseydi hiç kimse giriş yapamazdı.
+app.include_router(auth.router, prefix=settings.API_V1_PREFIX)
+
+# Geri kalan her şey giriş gerektiriyor.
+# Yetkiyi tek tek uçlara değil router'a bağlamak daha güvenli: yeni bir uç
+# eklendiğinde korumayı yazmayı unutmak mümkün değil, varsayılan olarak kapalı.
+korumali = [Depends(get_current_user)]
+
 # ⚠️ SIRA ÖNEMLİ: spatial ve export router'ları assets'ten ÖNCE gelmeli.
 # assets router'ında `GET /assets/{asset_id}` var; FastAPI yolları kayıt
 # sırasına göre eşleştirir. Önce assets'i eklersek `/assets/nearby` isteği
 # "nearby" kelimesini UUID sanıp 422 döner.
-app.include_router(spatial.router, prefix=settings.API_V1_PREFIX)
-app.include_router(export.router, prefix=settings.API_V1_PREFIX)
-app.include_router(maintenance.router, prefix=settings.API_V1_PREFIX)
-app.include_router(assets.router, prefix=settings.API_V1_PREFIX)
-app.include_router(districts.router, prefix=settings.API_V1_PREFIX)
-app.include_router(stats.router, prefix=settings.API_V1_PREFIX)
+app.include_router(spatial.router, prefix=settings.API_V1_PREFIX, dependencies=korumali)
+app.include_router(export.router, prefix=settings.API_V1_PREFIX, dependencies=korumali)
+app.include_router(
+    maintenance.router, prefix=settings.API_V1_PREFIX, dependencies=korumali
+)
+app.include_router(assets.router, prefix=settings.API_V1_PREFIX, dependencies=korumali)
+app.include_router(
+    districts.router, prefix=settings.API_V1_PREFIX, dependencies=korumali
+)
+app.include_router(stats.router, prefix=settings.API_V1_PREFIX, dependencies=korumali)

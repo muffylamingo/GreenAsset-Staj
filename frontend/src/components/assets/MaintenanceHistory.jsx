@@ -2,6 +2,7 @@ import { useState } from 'react'
 import toast from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
 
+import { useAuth } from '../../auth/AuthContext'
 import {
   useCreateLog,
   useDeleteLog,
@@ -21,6 +22,7 @@ import StatusBadge from '../ui/StatusBadge'
  */
 export default function MaintenanceHistory({ assetId }) {
   const { t, i18n } = useTranslation()
+  const { yonetici, kullanici } = useAuth()
   const [formAcik, setFormAcik] = useState(false)
   const [silinecek, setSilinecek] = useState(null)
 
@@ -37,6 +39,12 @@ export default function MaintenanceHistory({ assetId }) {
     setYapan('')
     setDurumSonrasi('')
     setFormAcik(false)
+  }
+
+  /** Form açılınca "yapan kişi" alanını giriş yapan kullanıcıyla doldur. */
+  const formuAc = () => {
+    if (!yapan) setYapan(kullanici?.full_name ?? '')
+    setFormAcik(true)
   }
 
   const gonder = async (e) => {
@@ -84,7 +92,7 @@ export default function MaintenanceHistory({ assetId }) {
         {!formAcik && (
           <button
             type="button"
-            onClick={() => setFormAcik(true)}
+            onClick={formuAc}
             className="flex items-center gap-1 text-body-sm text-primary hover:underline"
           >
             <Icon name="add" className="text-[14px]" />
@@ -183,15 +191,18 @@ export default function MaintenanceHistory({ assetId }) {
                 <span className="nums text-on-surface-variant">
                   {tarihBicimle(kayit.performed_at)}
                 </span>
-                <button
-                  type="button"
-                  onClick={() => setSilinecek(kayit)}
-                  aria-label={t('maintenance.delete')}
-                  title={t('maintenance.delete')}
-                  className="shrink-0 rounded p-0.5 text-on-surface-variant transition-colors hover:bg-error-container hover:text-on-error-container"
-                >
-                  <Icon name="delete" className="text-[16px]" />
-                </button>
+                {/* Bakım kaydı silme de yöneticiye ait — backend 403 döner */}
+                {yonetici && (
+                  <button
+                    type="button"
+                    onClick={() => setSilinecek(kayit)}
+                    aria-label={t('maintenance.delete')}
+                    title={t('maintenance.delete')}
+                    className="shrink-0 rounded p-0.5 text-on-surface-variant transition-colors hover:bg-error-container hover:text-on-error-container"
+                  >
+                    <Icon name="delete" className="text-[16px]" />
+                  </button>
+                )}
               </div>
 
               <p className="mb-1 text-on-surface">{kayit.note}</p>
