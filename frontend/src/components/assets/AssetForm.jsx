@@ -9,6 +9,7 @@ import { ASSET_TYPES, STATUS_HEX, STATUS_KEYS } from '../../theme/statusColors'
 import Button from '../ui/Button'
 import Icon from '../ui/Icon'
 import { assetSemasiOlustur, BOS_FORM } from './assetSchema'
+import MaintenanceHistory, { BakimRozeti } from './MaintenanceHistory'
 
 /**
  * Varlık ekleme / düzenleme formu.
@@ -281,6 +282,9 @@ export default function AssetForm({ asset, onSuccess, onCancel, koordinat }) {
             <p className="mt-1 text-body-sm text-on-surface-variant">
               {t('form.districtAuto')}
             </p>
+            <p className="mt-2 border-t border-outline-variant/50 pt-2">
+              <BakimRozeti gun={asset.days_since_maintenance} />
+            </p>
           </div>
         )}
 
@@ -293,6 +297,10 @@ export default function AssetForm({ asset, onSuccess, onCancel, koordinat }) {
             className={`resize-none ${girdiSinifi(errors.notes)}`}
           />
         </Alan>
+
+        {/* Bakım geçmişi — sadece kayıtlı varlıklarda.
+            Yeni varlık eklerken henüz bir id yok, kayıt bağlanacak şey yok. */}
+        {duzenlemeModu && <MaintenanceHistory assetId={asset.id} />}
       </div>
 
       {/* Alt aksiyonlar */}

@@ -15,6 +15,7 @@ import Icon from '../ui/Icon'
 import Modal from '../ui/Modal'
 import { EmptyState, ErrorState, TableSkeleton } from '../ui/States'
 import StatusBadge from '../ui/StatusBadge'
+import { BakimRozeti } from './MaintenanceHistory'
 
 const SUTUNLAR = [
   { anahtar: 'name', siralanabilir: true },
@@ -346,6 +347,16 @@ export default function AssetTable({ onEdit, onAdd, onShowOnMap }) {
 
                     <td className="px-3">
                       <StatusBadge status={kayit.status} size="sm" />
+                      {/* Bakım gecikmesi durumun hemen altında: ikisi birlikte
+                          okunduğunda "bakım lazım + 120 gündür bakılmadı"
+                          önceliklendirme için yeterli bilgi veriyor */}
+                      {kayit.days_since_maintenance != null &&
+                        kayit.days_since_maintenance > 90 && (
+                          <BakimRozeti
+                            gun={kayit.days_since_maintenance}
+                            className="mt-0.5 block"
+                          />
+                        )}
                     </td>
 
                     <td className="tabular px-3 text-data-tabular text-on-surface-variant">

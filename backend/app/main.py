@@ -8,7 +8,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
-from app.api.v1 import assets, districts, export, spatial, stats
+from app.api.v1 import assets, districts, export, maintenance, spatial, stats
 from app.core.config import settings
 from app.core.database import engine
 
@@ -77,6 +77,7 @@ def health():
 # "nearby" kelimesini UUID sanıp 422 döner.
 app.include_router(spatial.router, prefix=settings.API_V1_PREFIX)
 app.include_router(export.router, prefix=settings.API_V1_PREFIX)
+app.include_router(maintenance.router, prefix=settings.API_V1_PREFIX)
 app.include_router(assets.router, prefix=settings.API_V1_PREFIX)
 app.include_router(districts.router, prefix=settings.API_V1_PREFIX)
 app.include_router(stats.router, prefix=settings.API_V1_PREFIX)

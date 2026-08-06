@@ -81,6 +81,14 @@ class Asset(Base):
     )
     district = relationship("District", back_populates="assets", lazy="joined")
 
+    # Bakım geçmişi — varlık silinince kayıtları da silinir (cascade)
+    maintenance_logs = relationship(
+        "MaintenanceLog",
+        back_populates="asset",
+        cascade="all, delete-orphan",
+        order_by="MaintenanceLog.performed_at.desc()",
+    )
+
     notes: Mapped[str | None] = mapped_column(String(1000), nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(

@@ -107,6 +107,18 @@ class AssetOut(BaseModel):
     created_at: datetime
     updated_at: datetime
 
+    # --- Bakım geçmişinden türetilen alanlar ---
+    last_maintenance_at: datetime | None = Field(
+        default=None, description="En son bakım kaydının tarihi. Hiç yoksa null."
+    )
+    days_since_maintenance: int | None = Field(
+        default=None,
+        description=(
+            "Son bakımdan bu yana geçen gün. Hiç bakım kaydı yoksa null — "
+            "'0 gün' demek yanıltıcı olurdu."
+        ),
+    )
+
 
 # ---------------------------------------------------------------------------
 # Çıkış şemaları — GeoJSON (RFC 7946)
