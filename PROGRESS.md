@@ -8,7 +8,7 @@
 ## Genel Durum
 
 ```
-█████████████████████████████████░░░░░░░  82%
+███████████████████████████████████░░░░░  87%
 ```
 
 | # | Aşama | Ağırlık | Durum | Tamamlanma |
@@ -17,11 +17,11 @@
 | 1 | Veritabanı & Docker | 15% | ✅ Bitti | `██████████` 100% |
 | 2 | Backend REST API | 25% | ✅ Bitti | `██████████` 100% |
 | 3 | Frontend — form & tablo | 20% | ✅ Bitti | `██████████` 100% |
-| 4 | Harita entegrasyonu | 15% | 🟠 Doğrulama bekliyor | `████████░░` 85% |
-| 5 | Analiz & raporlama | 15% | ⚪ Başlanmadı | `░░░░░░░░░░` 0% |
+| 4 | Harita entegrasyonu | 15% | ✅ Bitti | `██████████` 100% |
+| 5 | Analiz & raporlama | 15% | 🟡 Backend bitti | `█████░░░░░` 50% |
 | 6 | Cila & teslim | 5% | ⚪ Başlanmadı | `░░░░░░░░░░` 0% |
 
-**Hesap:** 5 + 15 + 25 + 20 + (15 × 0.85) = **82%**
+**Hesap:** 5 + 15 + 25 + 20 + 15 + (15 × 0.5) = **87%**
 
 ---
 
@@ -179,12 +179,26 @@
 
 ## Aşama 5 — Analiz & raporlama ⚪ 0%
 
-### Backend (yeni uçlar gerekiyor)
-- [ ] `GET /stats/summary` — toplam, tipe göre, duruma göre, ilçeye göre
-- [ ] `GET /stats/timeseries` — `date_trunc` ile aylık ekleme grafiği
-- [ ] Trend hesabı — "geçen aya göre %12" için önceki dönem karşılaştırması
-- [ ] `POST /assets/within` — **polygon içi sorgu (`ST_Within`)** ← ödevin şartı
-- [ ] `GET /assets/export?format=csv|geojson`
+### Backend ✅ bitti
+- [x] `GET /stats/summary` — KPI'lar + tip/durum/ilçe dağılımı + trendler
+- [x] `GET /stats/timeseries` — `generate_series` ile boş aylar da 0 olarak geliyor
+- [x] Trend hesabı — geçen ay 0 ise `null` (sıfıra bölme yok)
+- [x] `POST /assets/within` — **polygon içi sorgu (`ST_Within`)** ← ödevin şartı
+- [x] `GET /assets/nearby` — **`ST_DWithin`** + metre cinsinden mesafe
+- [x] `GET /assets/export?format=csv|geojson`
+
+**Doğrulama sonuçları:**
+
+| Test | Sonuç |
+|---|---|
+| `/stats/summary` | 1475 toplam · 334 bakım · 93 arızalı · ilçe sıralaması doğru |
+| `ST_Within` (Sarıyer poligonu) | 71 varlık, durum/tip dağılımıyla |
+| Aynı poligon + durum filtresi | 14 (tutarlı) |
+| `ST_DWithin` 800 m | 2 varlık, mesafeler 398 m / 766 m |
+| **Metre/derece kontrolü** | 50 m → 0 · 5000 m → 143 (`::geography` cast'i çalışıyor) |
+| `/stats/timeseries` | Boş aylar 0 ile listede, kümülatif doğru |
+| CSV export | UTF-8 BOM ✓ · 93 kayıt (stats ile tutarlı) · Türkçe karakterler doğru |
+| GeoJSON export | 67 özellik (stats ile tutarlı) |
 
 ### Frontend
 - [ ] Dashboard — 4 KPI kartı + trend göstergeleri
