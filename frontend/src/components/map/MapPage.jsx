@@ -13,6 +13,7 @@ import Button from '../ui/Button'
 import Icon from '../ui/Icon'
 import { ErrorState } from '../ui/States'
 import MapLegend from './MapLegend'
+import MapSearch from './MapSearch'
 import MapView from './MapView'
 
 /**
@@ -37,6 +38,9 @@ export default function MapPage({
   const [bbox, setBbox] = useState(null)
 
   // --- Alan çizme durumu ---
+  // Adres aramasından seçilen konum — haritayı oraya uçurur
+  const [adresKonumu, setAdresKonumu] = useState(null)
+
   const [cizimModu, setCizimModu] = useState(false)
   const [koseSayisi, setKoseSayisi] = useState(0)
   const [temizleSayaci, setTemizleSayaci] = useState(0)
@@ -142,7 +146,9 @@ export default function MapPage({
         onFeatureClick={onFeatureClick}
         onViewportChange={gorunumDegisti}
         seciliId={seciliId}
-        ucKoordinat={ucKoordinat}
+        // Tablodan gelen "haritada göster" veya adres aramasından seçilen konum
+        ucKoordinat={adresKonumu ?? ucKoordinat}
+        ucZoom={adresKonumu ? 15 : 17}
         cizimModu={cizimModu}
         onPolygonComplete={poligonTamamlandi}
         onKoseSayisiChange={setKoseSayisi}
@@ -151,16 +157,7 @@ export default function MapPage({
 
       {/* --- Üst orta: arama + filtre chip'leri --- */}
       <div className="pointer-events-none absolute left-1/2 top-margin-page z-20 flex w-full max-w-2xl -translate-x-1/2 flex-col items-center gap-2 px-4">
-        <div className="pointer-events-auto flex w-full max-w-md items-center rounded-xl border border-outline-variant/40 bg-surface/95 px-3 py-2 shadow-lg backdrop-blur-md">
-          <Icon name="search" className="mr-2 text-[20px] text-on-surface-variant" />
-          <input
-            type="search"
-            value={arama}
-            onChange={(e) => setArama(e.target.value)}
-            placeholder={t('map.search')}
-            className="flex-1 bg-transparent text-body-md text-on-surface placeholder:text-on-surface-variant/60 focus:outline-none"
-          />
-        </div>
+        <MapSearch deger={arama} onDegisim={setArama} onKonumSec={setAdresKonumu} />
 
         <div className="scrollbar-hide pointer-events-auto flex max-w-full gap-2 overflow-x-auto pb-1">
           {ASSET_TYPE_KEYS.map((tip) => (

@@ -99,6 +99,7 @@ export default function MapView({
   onViewportChange,
   seciliId,
   ucKoordinat,
+  ucZoom = 17,
   cizimModu = false,
   onPolygonComplete,
   onKoseSayisiChange,
@@ -521,15 +522,16 @@ export default function MapView({
     cizimiCiz()
   }, [temizleSayaci, cizimiCiz])
 
-  /* --- Tablodan "haritada göster" denince o noktaya uç --- */
+  /* --- Bir konuma uç (tablodan "haritada göster" veya adres araması) --- */
   useEffect(() => {
     if (!ucKoordinat || !harita.current) return
     harita.current.flyTo({
       center: [ucKoordinat.lon, ucKoordinat.lat],
-      zoom: 17, // kümelenmenin bittiği zoom'un üstü, tek nokta görünsün
+      // Varlık için 17 (tek nokta görünsün), adres için 15 (mahalle görünsün)
+      zoom: ucZoom,
       duration: 1500,
     })
-  }, [ucKoordinat])
+  }, [ucKoordinat, ucZoom])
 
   return <div ref={kapsayici} className="h-full w-full" />
 }

@@ -120,7 +120,9 @@
     "search": "Varlık veya adres ara...",
     "assetsInView": "{{count}} varlık görünüyor",
     "clickHint": "Varlık eklemek için haritaya tıkla",
-    "iconHint": "Tip ikonları yakınlaşınca görünür"
+    "iconHint": "Tip ikonları yakınlaşınca görünür",
+    "addressResults": "Adres sonuçları",
+    "attribution": "Adres arama: OpenStreetMap Nominatim"
   },
   "filters": {
     "all": "Tümü",

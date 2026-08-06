@@ -120,7 +120,9 @@
     "search": "Search asset or address...",
     "assetsInView": "{{count}} assets in view",
     "clickHint": "Click on the map to add an asset",
-    "iconHint": "Type icons appear when you zoom in"
+    "iconHint": "Type icons appear when you zoom in",
+    "addressResults": "Address results",
+    "attribution": "Address search: OpenStreetMap Nominatim"
   },
   "filters": {
     "all": "All",
