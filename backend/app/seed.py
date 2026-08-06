@@ -18,6 +18,7 @@ from __future__ import annotations
 import argparse
 import json
 import random
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from sqlalchemy import func, select, text
@@ -174,9 +175,61 @@ def generate_assets(db, total: int) -> int:  # noqa: ANN001
     return created
 
 
+BAKIM_NOTLARI = [
+    "Rutin kontrol yapıldı, sorun görülmedi",
+    "Kırık ampul değiştirildi",
+    "Budama yapıldı",
+    "Boya yenilendi",
+    "Gevşek cıvatalar sıkıldı",
+    "Sulama sistemi kontrol edildi",
+    "Kırılan tahta değiştirildi",
+    "Temizlik yapıldı",
+    "Vandalizm hasarı onarıldı",
+]
+
+BAKIM_EKIPLERI = ["Saha Ekibi 1", "Saha Ekibi 2", "Saha Ekibi 3", "Park Bakım", "Elektrik Ekibi"]
+
+
+def generate_maintenance_logs(db, oran: float = 0.35) -> int:  # noqa: ANN001
+    """Varlıkların bir kısmına geçmiş bakım kayıtları üretir.
+
+    Neden hepsine değil? Gerçek hayatta da her varlığın bakım kaydı yoktur;
+    "hiç bakım yapılmamış" durumu arayüzde ayrı gösteriliyor ve demo'da o
+    halin de görünmesi gerekiyor.
+
+    Tarihler 5-400 gün arasına dağıtılıyor ki "90 günden eski" uyarısı da
+    tetiklensin.
+    """
+    from app.models import MaintenanceLog
+
+    varliklar = db.execute(select(Asset.id, Asset.status)).all()
+    secilenler = random.sample(varliklar, k=int(len(varliklar) * oran))
+    uretilen = 0
+
+    for asset_id, durum in secilenler:
+        for _ in range(random.randint(1, 3)):
+            gun_once = random.randint(5, 400)
+            db.add(
+                MaintenanceLog(
+                    asset_id=asset_id,
+                    note=random.choice(BAKIM_NOTLARI),
+                    performed_by=random.choice(BAKIM_EKIPLERI),
+                    performed_at=datetime.now(UTC) - timedelta(days=gun_once),
+                    # Kayıtların bir kısmı durumu değiştirmiş olsun
+                    status_after=durum if random.random() < 0.4 else None,
+                )
+            )
+            uretilen += 1
+
+    db.commit()
+    return uretilen
+
+
 def reset(db) -> None:  # noqa: ANN001
     """Tüm demo verisini siler."""
-    db.execute(text("TRUNCATE TABLE assets"))
+    # maintenance_logs, assets'e CASCADE bağlı — TRUNCATE ... CASCADE onu da temizler
+    db.execute(text("TRUNCATE TABLE maintenance_logs"))
+    db.execute(text("TRUNCATE TABLE assets CASCADE"))
     db.execute(text("TRUNCATE TABLE districts CASCADE"))
     db.commit()
     print("  Mevcut veriler temizlendi.")
@@ -206,7 +259,11 @@ def main() -> None:
         print(f"● Varlık üretimi (hedef ~{args.assets})")
         created = generate_assets(db, args.assets)
 
-        print(f"\n✅ Toplam {created} varlık üretildi.")
+        print("● Bakım geçmişi")
+        loglar = generate_maintenance_logs(db)
+        print(f"  {loglar} bakım kaydı üretildi")
+
+        print(f"\n✅ Toplam {created} varlık, {loglar} bakım kaydı.")
 
 
 if __name__ == "__main__":

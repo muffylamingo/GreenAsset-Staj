@@ -170,6 +170,134 @@ Bu 6 satır, ödevdeki "isim boş olamaz, koordinat sayı olmalı" şartını ba
 
 ---
 
+## 3.5 Swagger (`/docs`) — Kullanım Rehberi
+
+**http://localhost:8000/docs**
+
+Bu sayfayı FastAPI **otomatik** üretir; tek satır kod yazmadık. Kodda ne varsa
+sayfada o görünür — yeni bir uç eklersen anında burada belirir.
+
+> 💡 Sunumda/teslimde bu sayfayı açıp göstermek tek başına etkileyicidir:
+> "API dokümantasyonu da yazdım" demek yerine çalışan halini gösterirsin.
+
+### Sayfayı okumak
+
+Uçlar **etiketlere (tag)** göre gruplanmıştır — bizde: Sistem · Varlıklar ·
+Mekansal Sorgular · Dışa Aktarma · İlçeler · İstatistikler.
+
+Her satırdaki renkli kutu HTTP metodudur:
+
+| Renk | Metot | Anlamı |
+|---|---|---|
+| 🟦 Mavi | GET | Veri oku |
+| 🟩 Yeşil | POST | Yeni kayıt oluştur |
+| 🟧 Turuncu | PUT | Güncelle |
+| 🟨 Sarı | PATCH | Kısmi güncelle |
+| 🟥 Kırmızı | DELETE | Sil |
+
+### Bir ucu deneme — 5 adım
+
+1. Uca tıkla, açılsın
+2. Sağ üstteki **`Try it out`** butonuna bas (alanlar düzenlenebilir hale gelir)
+3. Parametreleri doldur
+4. Mavi **`Execute`** butonuna bas
+5. Aşağıda **Response** bölümünde sonucu gör
+
+Sonuç bölümünde üç şey vardır:
+- **Code** → HTTP durum kodu (200 tamam, 201 oluşturuldu, 422 doğrulama hatası...)
+- **Response body** → dönen JSON
+- **Curl** → aynı isteğin terminal komutu (kopyalayıp başka yerde çalıştırabilirsin)
+
+### Bu projede denemeye değer 6 senaryo
+
+**1. Sistemin ayakta mı?**
+`GET /health` → `Try it out` → `Execute`
+Beklenen: `{"status":"ok","database":true,"postgis":"3.4 ..."}`
+
+**2. GeoJSON çıktısını gör (ödevin kritik şartı)**
+`GET /api/v1/assets` → `limit` alanına `2` yaz → `Execute`
+Dönen yapıya dikkat et: `type: "FeatureCollection"`, içinde `features` dizisi.
+Her feature'da `geometry.coordinates` var — **sırası `[boylam, enlem]`**.
+
+**3. Filtreleri birleştir**
+Aynı uçta `type` = `TREE`, `status` = `BROKEN` seç → `Execute`
+`totalCount` alanına bak: sadece arızalı ağaçların sayısı.
+
+**4. Yeni varlık ekle**
+`POST /api/v1/assets` → `Try it out` → gövdeyi şununla değiştir:
+
+```json
+{
+  "name": "Deneme Çınarı",
+  "type": "TREE",
+  "status": "GOOD",
+  "latitude": 41.105,
+  "longitude": 29.027,
+  "notes": "Swagger'dan eklendi"
+}
+```
+
+`Execute` → **201** dönmeli. Yanıttaki `district_name` alanına bak:
+**"Sarıyer"** yazıyor. Biz ilçeyi göndermedik — PostGIS `ST_Within` ile
+koordinattan kendisi buldu.
+
+> Dönen `id` değerini kopyala, sonraki adımlarda lazım olacak.
+
+**5. Doğrulamayı test et (bilerek hata yap)**
+Aynı uçta `name` alanını `""` yap, `latitude`'ü `999` yap → `Execute`
+**422** dönecek. `detail` içinde hangi alanın neden reddedildiği yazar:
+
+```json
+{"detail":[{"loc":["body","name"],"msg":"İsim boş olamaz"}, ...]}
+```
+
+Bu, "validation backend'de de var" demenin kanıtıdır.
+
+**6. Mekansal sorgu — projenin en GIS'li kısmı**
+`POST /api/v1/assets/within` → `Try it out` → gövde:
+
+```json
+{
+  "polygon": {
+    "type": "Polygon",
+    "coordinates": [[[29.00,41.08],[29.10,41.08],[29.10,41.20],[29.00,41.20],[29.00,41.08]]]
+  }
+}
+```
+
+`Execute` → o dikdörtgenin içine düşen varlıklar + `countsByStatus` özeti.
+Bu sorgu normal PostgreSQL'de **yazılamaz**; PostGIS'in farkı tam olarak budur.
+
+**Bonus:** `GET /api/v1/assets/nearby` → `lat=41.105`, `lon=29.027`,
+`radius=50` dene, sonra `radius=5000` dene. Yarıçapı metre olarak işlediğini
+görürsün (`::geography` cast'i sayesinde).
+
+### Şema (Schemas) bölümü
+
+Sayfanın en altındaki **Schemas** kısmı, API'nin kullandığı tüm veri
+yapılarını listeler: `AssetCreate`, `AssetOut`, `StatsSummary`...
+Her alanın tipi, zorunlu olup olmadığı ve kısıtları (min/max) burada yazar.
+Bu bölüm Pydantic şemalarından otomatik üretilir.
+
+### Sık karşılaşılan durumlar
+
+| Durum | Sebep | Çözüm |
+|---|---|---|
+| Sayfa açılmıyor | Backend çalışmıyor | `docker compose up -d` |
+| `422 Unprocessable Entity` | Gönderdiğin veri şemaya uymuyor | Yanıttaki `detail` → `loc` alanı hangi alanın sorunlu olduğunu söyler |
+| `404 Varlık bulunamadı` | Yanlış/silinmiş UUID | Önce `GET /assets` ile geçerli bir id al |
+| `500 Internal Server Error` | Backend'de beklenmeyen hata | `docker compose logs backend --tail 50` ile logu oku |
+| Türkçe karakterler bozuk | Sadece görüntü sorunu olabilir | Swagger UTF-8 gösterir; bozuksa gerçekten sorun var demektir |
+| Dışa aktarma ucu dosya indirmiyor | Swagger büyük dosyaları göstermez | `Download file` bağlantısını kullan ya da adresi tarayıcıda aç |
+
+### `/redoc` farkı
+
+**http://localhost:8000/redoc** aynı bilgiyi daha okunaklı, **ama denemesiz**
+gösterir. Swagger "deneme tahtası", ReDoc "referans kitabı" gibidir.
+Dokümantasyonu birine göstereceksen ReDoc daha derli toplu görünür.
+
+---
+
 ## 4. Frontend: React + Vite + Tailwind
 
 ### 4.1 Bilmen gereken React

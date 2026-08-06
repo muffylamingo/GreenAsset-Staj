@@ -1,0 +1,192 @@
+{
+  "app": {
+    "name": "GreenAsset",
+    "tagline": "Smart City Asset Management"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "map": "Map",
+    "assets": "Assets",
+    "reports": "Reports",
+    "settings": "Settings",
+    "toggleTheme": "Toggle theme",
+    "toggleLanguage": "Change language"
+  },
+  "assetType": {
+    "TREE": "Tree",
+    "BENCH": "Bench",
+    "POLE": "Street Lamp",
+    "TRASH_BIN": "Trash Bin",
+    "PLAYGROUND": "Playground"
+  },
+  "status": {
+    "GOOD": "Good",
+    "NEEDS_MAINTENANCE": "Needs Maintenance",
+    "BROKEN": "Broken"
+  },
+  "form": {
+    "addTitle": "Add New Asset",
+    "editTitle": "Edit Asset",
+    "name": "Asset Name",
+    "namePlaceholder": "e.g. Oak Tree - Sector 4",
+    "type": "Asset Type",
+    "status": "Current Status",
+    "coordinates": "Coordinates",
+    "latitude": "Latitude",
+    "longitude": "Longitude",
+    "useCurrent": "Use current location",
+    "mapHint": "Click on the map to auto-fill coordinates",
+    "notes": "Additional Notes",
+    "notesPlaceholder": "Installation date, model details, etc.",
+    "save": "Save Asset",
+    "update": "Update",
+    "cancel": "Cancel",
+    "district": "District",
+    "districtAuto": "Determined automatically from coordinates"
+  },
+  "validation": {
+    "nameRequired": "Name cannot be empty",
+    "nameTooLong": "Name can be at most 120 characters",
+    "typeRequired": "Asset type is required",
+    "statusRequired": "Status is required",
+    "latRequired": "Latitude is required",
+    "lonRequired": "Longitude is required",
+    "latRange": "Latitude must be between -90 and 90",
+    "lonRange": "Longitude must be between -180 and 180",
+    "mustBeNumber": "Must be a number",
+    "notesTooLong": "Notes can be at most 1000 characters"
+  },
+  "table": {
+    "title": "Assets",
+    "recordCount": "{{count}} records",
+    "search": "Search assets...",
+    "addAsset": "Add Asset",
+    "name": "Name",
+    "type": "Type",
+    "status": "Status",
+    "coordinates": "Coordinates",
+    "district": "District",
+    "createdAt": "Created",
+    "actions": "Actions",
+    "edit": "Edit",
+    "delete": "Delete",
+    "showOnMap": "Show on map",
+    "selected": "{{count}} selected",
+    "changeStatus": "Change status",
+    "export": "Export",
+    "clearAll": "Clear all",
+    "rowsPerPage": "Rows per page",
+    "showing": "{{from}}-{{to}} of {{total}}",
+    "noDistrict": "—"
+  },
+  "maintenance": {
+    "title": "Maintenance History",
+    "empty": "No maintenance records yet",
+    "add": "Add maintenance record",
+    "note": "Work performed",
+    "notePlaceholder": "e.g. Replaced broken bulb",
+    "performedBy": "Performed by",
+    "performedByPlaceholder": "e.g. Field Team 3",
+    "performedAt": "Date",
+    "statusAfter": "Status after maintenance",
+    "statusUnchanged": "Leave status unchanged",
+    "save": "Add record",
+    "cancel": "Cancel",
+    "delete": "Delete record",
+    "added": "Maintenance record added",
+    "deleted": "Maintenance record deleted",
+    "neverMaintained": "Never maintained",
+    "daysAgo": "{{count}} days since maintenance",
+    "today": "Maintained today",
+    "statusChangedTo": "status → {{status}}",
+    "confirmDeleteTitle": "Delete maintenance record",
+    "confirmDeleteMessage": "This record will be permanently deleted. The asset's current status will not change."
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "subtitle": "Overview of city assets",
+    "kpiTotal": "Total Assets",
+    "kpiMaintenance": "Needs Maintenance",
+    "kpiBroken": "Broken",
+    "kpiThisMonth": "Added This Month",
+    "vsLastMonth": "vs last month",
+    "noPrevious": "no data last month",
+    "byType": "Distribution by type",
+    "byStatus": "Status distribution",
+    "byDistrict": "Districts with most assets",
+    "overTime": "Assets added over time",
+    "assetsUnit": "assets",
+    "range12": "12 months",
+    "range6": "6 months",
+    "range3": "3 months",
+    "showTable": "Show as table",
+    "hideTable": "Hide table",
+    "export": "Export",
+    "exportCsv": "Download CSV",
+    "exportGeojson": "Download GeoJSON",
+    "share": "share"
+  },
+  "spatial": {
+    "drawTitle": "Area query",
+    "drawHint": "Draw an area on the map and I'll list the assets inside",
+    "drawStart": "Start drawing an area",
+    "drawCancel": "Cancel drawing",
+    "drawFinish": "Finish area",
+    "drawing": "Click to place corners — click the first point to finish",
+    "clearArea": "Clear area",
+    "resultTitle": "In selected area",
+    "resultCount": "{{count}} assets",
+    "noResult": "No assets in this area"
+  },
+  "map": {
+    "legend": "Map Legend",
+    "search": "Search asset or address...",
+    "assetsInView": "{{count}} assets in view",
+    "clickHint": "Click on the map to add an asset",
+    "iconHint": "Type icons appear when you zoom in",
+    "addressResults": "Address results",
+    "attribution": "Address search: OpenStreetMap Nominatim"
+  },
+  "filters": {
+    "all": "All",
+    "type": "Type",
+    "status": "Status",
+    "district": "District",
+    "allDistricts": "All districts",
+    "clear": "Clear filters"
+  },
+  "empty": {
+    "noAssets": "No assets yet",
+    "noAssetsHint": "Use the button above to add your first asset",
+    "noResults": "No assets match your filters",
+    "noResultsHint": "Try loosening the filters"
+  },
+  "errors": {
+    "loadFailed": "Failed to load data",
+    "saveFailed": "Failed to save",
+    "deleteFailed": "Failed to delete",
+    "networkError": "Cannot reach the server. Is the backend running?",
+    "retry": "Retry",
+    "geolocationUnsupported": "Your browser does not support geolocation",
+    "geolocationDenied": "Location permission denied"
+  },
+  "toast": {
+    "created": "{{name}} added",
+    "updated": "{{name}} updated",
+    "deleted": "{{name}} deleted",
+    "bulkStatusChanged": "Status changed for {{count}} assets",
+    "bulkDeleted": "{{count}} assets deleted"
+  },
+  "confirm": {
+    "deleteTitle": "Delete asset",
+    "deleteMessage": "\"{{name}}\" will be permanently deleted. This cannot be undone.",
+    "bulkDeleteTitle": "Delete selected assets",
+    "bulkDeleteMessage": "{{count}} assets will be permanently deleted. This cannot be undone.",
+    "confirm": "Delete",
+    "cancel": "Cancel"
+  },
+  "common": {
+    "loading": "Loading...",
+    "close": "Close"
+  }
+}

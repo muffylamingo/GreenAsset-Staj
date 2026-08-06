@@ -118,7 +118,9 @@ docker compose down -v
 
 | Dosya | İçerik |
 |---|---|
+| [PROGRESS.md](PROGRESS.md) | **İlerleme durumu (% ile), kalan işler, ek paket kararı** |
 | [PLAN.md](PLAN.md) | Yol haritası, mimari, API sözleşmesi |
+| [DESIGN-SYSTEM.md](DESIGN-SYSTEM.md) | Tasarım token'ları (Stitch export'undan) |
 | [BILMEM-GEREKENLER.md](BILMEM-GEREKENLER.md) | Öğrenme rehberi, PostGIS/React notları, sık hatalar |
 | [EKSTRA-OZELLIKLER.md](EKSTRA-OZELLIKLER.md) | Ödev dışı geliştirme fikirleri |
 | [STITCH-PROMPT.md](STITCH-PROMPT.md) | Arayüz tasarım promptları |
