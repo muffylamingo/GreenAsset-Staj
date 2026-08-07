@@ -31,7 +31,7 @@ Hepsi bu. Node.js veya Python kurmana gerek yok.
 | Servis | Adres | Not |
 |---|---|---|
 | **Uygulama** | http://localhost:3000 | Nginx ile servis edilen React derlemesi |
-| API dokümantasyonu | http://localhost:8000/docs | Swagger — uçları buradan deneyebilirsin |
+| API dokümantasyonu | http://localhost:3000/docs | Swagger — uçları buradan deneyebilirsin |
 | pgAdmin | http://localhost:5050 | Veritabanı yönetimi |
 
 ### Demo hesapları
