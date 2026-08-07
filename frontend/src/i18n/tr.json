@@ -212,5 +212,10 @@
     "title": "Sayfa bulunamadı",
     "description": "Aradığın adres yok. Bağlantı eski olabilir veya adresi yanlış yazmış olabilirsin.",
     "backToMap": "Haritaya dön"
+  },
+  "errorBoundary": {
+    "title": "Bir şeyler ters gitti",
+    "description": "Beklenmeyen bir hata oluştu. Sayfayı yenilemek genellikle sorunu çözer. Sorun sürerse hatayı bildirin.",
+    "reload": "Sayfayı yenile"
   }
 }

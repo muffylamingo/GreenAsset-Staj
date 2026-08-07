@@ -1,5 +1,7 @@
 import { Component } from 'react'
 
+import i18n from '../../i18n'
+
 /**
  * Hata sınırı (Error Boundary).
  *
@@ -40,11 +42,16 @@ export default class ErrorBoundary extends Component {
           <span className="text-2xl">⚠️</span>
         </div>
 
-        <h1 className="text-xl font-semibold text-on-surface">Bir şeyler ters gitti</h1>
+        {/* `useTranslation` yerine doğrudan i18n:
+            bu bir sınıf bileşeni (hook kullanamaz) ve sağlayıcıların da
+            dışında duruyor — zaten amacı, içeride bir şey patladığında
+            ayakta kalabilmek. */}
+        <h1 className="text-xl font-semibold text-on-surface">
+          {i18n.t('errorBoundary.title')}
+        </h1>
 
         <p className="max-w-md text-sm text-on-surface-variant">
-          Beklenmeyen bir hata oluştu. Sayfayı yenilemek genellikle sorunu çözer.
-          Sorun sürerse hatayı bildirin.
+          {i18n.t('errorBoundary.description')}
         </p>
 
         {/* Hatanın kendisi de gösteriliyor: kullanıcı ekran görüntüsü
@@ -58,7 +65,7 @@ export default class ErrorBoundary extends Component {
           onClick={() => window.location.reload()}
           className="rounded-full bg-primary px-6 py-2.5 text-sm font-medium text-on-primary hover:opacity-90"
         >
-          Sayfayı yenile
+          {i18n.t('errorBoundary.reload')}
         </button>
       </div>
     )
