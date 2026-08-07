@@ -33,7 +33,7 @@ export default function NotFound() {
       </code>
 
       <Link
-        to="/harita"
+        to="/map"
         className="rounded-full bg-primary px-6 py-2.5 text-label-lg text-on-primary transition-opacity hover:opacity-90"
       >
         {t('notFound.backToMap')}

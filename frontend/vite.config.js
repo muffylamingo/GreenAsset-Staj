@@ -5,6 +5,14 @@ import tailwindcss from '@tailwindcss/vite'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  build: {
+    // Derlenen dosyalar varsayılan olarak `assets/` klasörüne çıkıyordu.
+    // Ama `/assets` bizim UYGULAMA rotamız (varlık listesi) — çakışıyorlardı:
+    // Nginx `/assets` isteğini gerçek bir klasör sanıp 403 döndürüyordu.
+    // Statik dosyaları `static/` altına alıyoruz; "assets" adı uygulamanın
+    // kavramı, derleme çıktısının değil.
+    assetsDir: 'static',
+  },
   server: {
     port: 5173,
     strictPort: true, // port doluysa sessizce 5174'e kaçma, hata ver

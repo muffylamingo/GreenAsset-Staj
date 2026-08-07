@@ -27,12 +27,19 @@ import { dilDegistir } from './i18n'
 // kötüdür: kullanıcı bozuk sanır. Analiz zaten Gösterge Paneli'nde;
 // gerçekten ayrı bir rapor ekranı gerekirse o zaman eklenir.
 //
-// Yollar sabit ve Türkçe: arayüz dili değişse de adres değişmez, yoksa
-// paylaşılan bir bağlantı dil değiştiğinde kırılırdı.
+// Yollar SABİT ve İngilizce.
+//
+// Neden sabit: dile göre değişseydi (/harita ↔ /map) paylaşılan bir bağlantı,
+// karşı taraf farklı dil kullandığında kırılırdı. Adres bir kimliktir;
+// görüntülenen metin gibi çevrilmez.
+//
+// Neden İngilizce: API zaten /api/v1/assets, kodun tamamı İngilizce ve
+// uygulama iki dilli. İngilizce arayüzdeyken adres çubuğunda /harita
+// görmek tutarsız duruyordu.
 const MENU = [
-  { anahtar: 'dashboard', icon: 'dashboard', yol: '/panel' },
-  { anahtar: 'map', icon: 'map', yol: '/harita' },
-  { anahtar: 'assets', icon: 'inventory_2', yol: '/varliklar' },
+  { anahtar: 'dashboard', icon: 'dashboard', yol: '/dashboard' },
+  { anahtar: 'map', icon: 'map', yol: '/map' },
+  { anahtar: 'assets', icon: 'inventory_2', yol: '/assets' },
 ]
 
 export default function App() {
@@ -189,12 +196,12 @@ export default function App() {
           {/* Kök adres haritaya gitsin. `replace`: tarayıcı geçmişinde "/"
               bırakmıyoruz, yoksa geri tuşu kullanıcıyı aynı yere geri
               yönlendirip sonsuz döngü hissi verirdi. */}
-          <Route path="/" element={<Navigate to="/harita" replace />} />
+          <Route path="/" element={<Navigate to="/map" replace />} />
 
-          <Route path="/panel" element={<DashboardPage koyu={koyu} />} />
+          <Route path="/dashboard" element={<DashboardPage koyu={koyu} />} />
 
           <Route
-            path="/harita"
+            path="/map"
             element={
               <MapPage
                 koyu={koyu}
@@ -207,7 +214,7 @@ export default function App() {
           />
 
           <Route
-            path="/varliklar"
+            path="/assets"
             element={
               <AssetTable
                 onAdd={() => panelAc()}
@@ -215,7 +222,7 @@ export default function App() {
                 onShowOnMap={(asset) => {
                   setSeciliId(asset.id)
                   setUcKoordinat({ lat: asset.latitude, lon: asset.longitude })
-                  navigate('/harita')
+                  navigate('/map')
                 }}
               />
             }

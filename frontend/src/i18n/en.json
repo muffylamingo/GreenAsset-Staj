@@ -212,5 +212,10 @@
     "title": "Page not found",
     "description": "This address doesn't exist. The link may be outdated or mistyped.",
     "backToMap": "Back to map"
+  },
+  "errorBoundary": {
+    "title": "Something went wrong",
+    "description": "An unexpected error occurred. Reloading the page usually fixes it. If it persists, please report the error.",
+    "reload": "Reload page"
   }
 }
