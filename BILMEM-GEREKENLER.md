@@ -592,6 +592,10 @@ Aşağıdakiler teorik değil — hepsi bu projede başımıza geldi ve saatler 
 | Haritada tek varlık görünmüyor ama sayaç dolu — **sadece Docker sürümünde** | MapLibre worker kodunu kendi içine gömülü metinden üretiyor; Vite 8'in paketleyicisi modülleri birleştirirken bu metnin dış bağlarını koparıyor → worker `ar is not defined` verip GeoJSON'u hiç işleyemiyor | `maplibre-gl-csp` sürümü + `...csp-worker.js?url` ile `setWorkerUrl()`: worker paketlemeye hiç girmiyor |
 | Container `unhealthy`, oysa site dışarıdan açılıyor | Nginx sadece IPv4 dinliyor; container içinde `localhost` önce `::1`'e çözümleniyor | `listen [::]:80` ekle, sağlık kontrolünde `127.0.0.1` kullan |
 | Üretimde hatanın izi yok | Hata kaydı `if (import.meta.env.DEV)` içindeydi | Hata kayıtlarını asla ortama bağlama — sadece ayrıntı seviyesini değiştir |
+| Güvenlik başlıkları görünmüyor (Nginx'e yazdığımız hâlde) | Nginx'te `add_header` **miras alınmaz**: bir `location` içinde tek bir `add_header` varsa üst bloktakiler o location için tamamen kaybolur | Başlıkları ayrı dosyaya al, her `location`'a `include` et |
+| Rate limit herkesi birden kilitliyor | Proxy arkasında `remote_addr` hep Nginx'in IP'si → tüm kullanıcılar tek sayaçta | `X-Forwarded-For`'un **son** parçasını kullan (baştakiler taklit edilebilir) |
+| Denetim kaydı silinen varlıkla birlikte kayboluyor | `entity_id` ForeignKey yapılmıştı; CASCADE izi de sildi | Denetim tablosunda kimlik alanı FK **olmamalı** — iz, izlediği kayıttan bağımsız yaşar |
+| `alembic --autogenerate` alakasız değişiklikler üretiyor | Aynı kuralın iki farklı yazımını (unique constraint ↔ unique index) fark sanıyor | Üretilen migration'ı **her zaman** elden geçir, gereksiz satırları sil |
 
 ---
 

@@ -19,6 +19,7 @@ shapely>=2.0               # geometri <-> GeoJSON dönüşümü
 PyJWT>=2.8                 # JWT üretme/doğrulama
 bcrypt>=4.1                # parola özetleme (passlib yerine doğrudan)
 python-multipart>=0.0.9    # Swagger'ın "Authorize" formu için
+slowapi>=0.1.9             # istek hızı sınırı (kaba kuvvet koruması)
 
 # ---- Yardımcılar ----
 python-dotenv>=1.0

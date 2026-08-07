@@ -20,11 +20,14 @@ import { dilDegistir } from './i18n'
  *   sol ikon rayı (72px) + ana içerik + sağdan açılan panel (400px)
  */
 
+// Not: Burada bir de "reports" (raporlar) maddesi vardı ama `hazir: false`
+// olduğu için tıklanamıyordu. Çalışmayan bir düğme, olmayan bir düğmeden
+// kötüdür: kullanıcı bozuk sanır. Analiz zaten Gösterge Paneli'nde;
+// gerçekten ayrı bir rapor ekranı gerekirse o zaman eklenir.
 const MENU = [
   { anahtar: 'dashboard', icon: 'dashboard', hazir: true },
   { anahtar: 'map', icon: 'map', hazir: true },
   { anahtar: 'assets', icon: 'inventory_2', hazir: true },
-  { anahtar: 'reports', icon: 'analytics', hazir: false },
 ]
 
 export default function App() {

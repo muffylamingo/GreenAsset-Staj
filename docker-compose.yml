@@ -71,6 +71,7 @@ services:
     container_name: greenasset-backend
     restart: unless-stopped
     environment:
+      ENVIRONMENT: ${ENVIRONMENT:-development}
       DATABASE_URL: ${DATABASE_URL}
       CORS_ORIGINS: ${CORS_ORIGINS}
       SECRET_KEY: ${SECRET_KEY}

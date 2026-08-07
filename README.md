@@ -99,7 +99,7 @@ framework ile değiştirsek CRUD katmanı aynen kalır.
 | Kimlik | PyJWT · bcrypt |
 | Veritabanı | PostgreSQL 16 + PostGIS 3.4 |
 | Servis | Docker Compose · Nginx · pgAdmin |
-| Test | pytest (53 test) |
+| Test | pytest (61 test) |
 
 ---
 
@@ -113,7 +113,7 @@ framework ile değiştirsek CRUD katmanı aynen kalır.
 - PostGIS eklentili PostgreSQL + pgAdmin, tek `docker compose up` ile
 - `assets` tablosu: UUID, isim, tip (5 çeşit), durum, **Point geometrisi (SRID 4326)**
 - Geometri üzerinde **GIST index** — mekansal sorguların hızlı olmasının sırrı
-- Alembic ile şema versiyonlama (4 migration)
+- Alembic ile şema versiyonlama (5 migration)
 - Healthcheck: backend, DB hazır olmadan başlamıyor
 </details>
 
@@ -167,7 +167,7 @@ framework ile değiştirsek CRUD katmanı aynen kalır.
 | 🗺️ **İlçe sınırları** | Gerçek OSM verisi (39 ilçe), varlık ilçesi otomatik hesaplanır |
 | 🌍 **Çift dil** | Türkçe / İngilizce, tercih kaydedilir |
 | 🌗 **Açık / koyu tema** | Harita altlığı da değişir |
-| ✅ **53 test** | Yetki kuralları, mekansal sorgular, doğrulama |
+| ✅ **61 test** | Yetki kuralları, mekansal sorgular, doğrulama |
 
 ---
 
@@ -178,7 +178,7 @@ docker compose exec backend python -m pytest
 ```
 
 ```
-53 passed in ~40s
+61 passed in ~50s
 ```
 
 Testler ayrı bir veritabanında (`greenasset_test`) çalışır ve her test
@@ -192,6 +192,9 @@ kendi işleminde açılıp sonunda geri alınır — birbirlerini etkilemezler.
 | `test_olmayan_kullanici_ayni_mesaji_doner` | Kullanıcı sayımı (enumeration) açığı |
 | `test_geojson_koordinat_sirasi_lon_lat` | Sıra karışırsa noktalar okyanusta görünür |
 | `test_ST_DWithin_yarıcap_metre_cinsinden` | `::geography` cast'i olmazsa 100 m → 100 derece |
+| `test_silinen_varligin_izi_kalir` | Denetim izi, izlediği kaydın ömründen bağımsız olmalı |
+| `test_login_kaba_kuvvete_kapali` | Sınır kalkarsa parola sınırsız denenebilir |
+| `test_proxy_arkasinda_gercek_ip_kullanilir` | Yanlış IP okunursa rate limit tamamen atlanır |
 
 ---
 
@@ -238,8 +241,8 @@ docker compose down -v
 ```
 ├── docker-compose.yml        # 4 servis: db, pgadmin, backend, frontend
 ├── backend/
-│   ├── alembic/versions/     # 4 migration
-│   ├── tests/                # 53 pytest testi
+│   ├── alembic/versions/     # 5 migration
+│   ├── tests/                # 61 pytest testi
 │   └── app/
 │       ├── api/v1/           # uçlar: assets, spatial, stats, auth, maintenance
 │       ├── core/             # ayarlar, DB, güvenlik, bağımlılıklar, geo
@@ -299,15 +302,41 @@ ana sorguya gömüldü; 25 varlık için 26 değil 1 sorgu atılıyor.
 
 ---
 
+## 🔒 Güvenlik
+
+Proje teslim öncesi denetimden geçirildi; bulunan açıklar kapatıldı.
+
+| Önlem | Ne yapıyor |
+|---|---|
+| **Rol bazlı yetki** | Yetki kontrolü router seviyesinde — yeni uç eklerken korumayı yazmayı unutmak mümkün değil. Saha ekibi silemez (`403`). |
+| **Kaba kuvvet koruması** | `/auth/login` dakikada 10 deneme, aşılırsa `429`. Genel sınır 300/dk. |
+| **Denetim kaydı** | Kim, ne zaman, neyi değiştirdi — **varlık silinse bile iz kalır**. Yalnızca yönetici okuyabilir. |
+| **Güvenlik başlıkları** | CSP, `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy`, `Permissions-Policy`. |
+| **`SECRET_KEY` koruması** | `ENVIRONMENT=production` iken varsayılan anahtarla uygulama **hiç açılmaz**. |
+| **Kullanıcı sayımı engeli** | "Kullanıcı yok" ile "parola yanlış" aynı yanıtı döner. |
+| **Girdi doğrulama** | Sayfalama sınırı, geçersiz UUID, negatif değer → `422`. |
+| **Sürüm gizleme** | `server_tokens off` — Nginx sürümü sızmaz. |
+| **`robots.txt`** | İç araç olduğu için `Disallow: /`. |
+
+Referans: [OWASP API Security Top 10](https://owasp.org/API-Security/) — 1 numaralı
+madde olan *Broken Object Level Authorization* için özel test yazıldı.
+
+---
+
 ## ⚠️ Bilinen Sınırlamalar
 
 Bunlar bilinçli ödünlerdir, teslim notudur:
 
 - **Token `localStorage`'da tutuluyor.** XSS'e karşı korumasız; üretimde
-  HttpOnly cookie tercih edilmeli.
-- **`SECRET_KEY` varsayılanı kodda var.** Üretimde `.env`'den gelmeli.
+  HttpOnly cookie tercih edilmeli. (CSP bu riski azaltır ama sıfırlamaz.)
 - **Demo parolaları giriş ekranında görünüyor.** Staj projesi olduğu için.
-- **CI kurulmadı.** 53 test var ama GitHub Actions ile otomatik çalışmıyor.
+- **Rate limit sayacı bellekte.** Tek kopya için yeterli; birden fazla kopya
+  çalıştırılırsa Redis'e taşınmalı.
+- **Denetim kaydı ile işlem ayrı commit'lerde.** Tam atomiklik için `commit`
+  çağrılarının CRUD katmanından API katmanına taşınması gerekir.
+- **HSTS kapalı.** Kurulum HTTP üzerinden çalışıyor; HTTPS'e geçilince
+  `security-headers.conf` içindeki satır açılmalı.
+- **CI kurulmadı.** 61 test var ama GitHub Actions ile otomatik çalışmıyor.
 
 ---
 

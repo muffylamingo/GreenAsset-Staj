@@ -19,11 +19,28 @@ from sqlalchemy.orm import sessionmaker
 
 from app.core.config import settings
 from app.core.database import Base, get_db
+from app.core.limiter import limiter
 from app.core.security import parola_ozetle
 from app.main import app
 from app.models import Asset, AssetStatus, AssetType, District, User, UserRole
 
 TEST_DB = "greenasset_test"
+
+
+@pytest.fixture(autouse=True)
+def hiz_siniri_kapali():
+    """Testlerde istek hızı sınırını kapatır.
+
+    Testlerin hepsi aynı IP'den (test istemcisi) çalışıyor ve bir test
+    dosyasında onlarca giriş isteği var. Sınır açık kalsaydı testler
+    birbirini 429'a düşürür, üstelik hangi testin patlayacağı ÇALIŞMA
+    SIRASINA göre değişirdi — en kötü hata türü: bazen geçen test.
+
+    Sınırın kendisi `test_rate_limit.py` içinde bilerek açılarak test ediliyor.
+    """
+    limiter.enabled = False
+    yield
+    limiter.enabled = True
 
 
 def _test_url() -> str:

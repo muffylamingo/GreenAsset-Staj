@@ -8,6 +8,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import column_property
 
 from app.models.asset import Asset, AssetStatus, AssetType
+from app.models.audit import AuditAction, AuditLog
 from app.models.district import District
 from app.models.maintenance import MaintenanceLog
 from app.models.user import User, UserRole
@@ -36,6 +37,8 @@ __all__ = [
     "Asset",
     "AssetStatus",
     "AssetType",
+    "AuditAction",
+    "AuditLog",
     "District",
     "MaintenanceLog",
     "User",
