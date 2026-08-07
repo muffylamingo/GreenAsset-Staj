@@ -209,7 +209,9 @@ export default function MapView({
       })
 
       // --- Tekil noktalar ---
-      // Yarıçap zoom'la büyüyor: sokak ölçeğinde içine tip ikonu sığması gerek
+      // Yarıçap zoom'la büyüyor: sokak ölçeğinde içine tip ikonu sığması gerek.
+      // Kırılma noktası ikonların başladığı zoom (14) ile hizalı — daire
+      // orada birden ikonu barındıracak boyuta geliyor.
       map.addLayer({
         id: KATMAN.noktalar,
         type: 'circle',
@@ -222,8 +224,9 @@ export default function MapView({
             ['linear'],
             ['zoom'],
             10, 4,
-            15, 9,
-            18, 13,
+            14, 9,
+            16, 12,
+            18, 14,
           ],
           'circle-stroke-width': 1.5,
           'circle-stroke-color': koyu ? '#0e120d' : '#ffffff',
@@ -241,7 +244,16 @@ export default function MapView({
         minzoom: IKON_MIN_ZOOM,
         layout: {
           'icon-image': ['concat', 'varlik-', ['get', 'type']],
-          'icon-size': 0.5,
+          // İkon da daireyle birlikte büyüsün; sabit boyutta kalsaydı
+          // yakınlaştıkça dairenin ortasında küçücük bir leke gibi dururdu.
+          'icon-size': [
+            'interpolate',
+            ['linear'],
+            ['zoom'],
+            14, 0.5,
+            16, 0.62,
+            18, 0.72,
+          ],
           'icon-allow-overlap': true,
           'icon-ignore-placement': true,
         },
