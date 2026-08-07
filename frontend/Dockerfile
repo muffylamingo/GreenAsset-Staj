@@ -32,8 +32,9 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
 
-# Nginx'in kendi sağlık kontrolü yok; basit bir istekle kontrol ediyoruz
+# Nginx'in kendi sağlık kontrolü yok; basit bir istekle kontrol ediyoruz.
+# Adres 127.0.0.1 — "localhost" yazarsak isim çözümlemesine bağımlı oluruz.
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s \
-  CMD wget -q --spider http://localhost/ || exit 1
+  CMD wget -q --spider http://127.0.0.1/ || exit 1
 
 CMD ["nginx", "-g", "daemon off;"]

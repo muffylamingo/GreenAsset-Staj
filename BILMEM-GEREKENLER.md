@@ -589,6 +589,9 @@ Aşağıdakiler teorik değil — hepsi bu projede başımıza geldi ve saatler 
 | Excel'de `Ã‡Ä±nar` görünüyor | CSV'de UTF-8 BOM yok | Dosyanın başına BOM ekle, ayraç olarak `;` kullan |
 | PowerShell'le düzenlenen dosyada Türkçe bozuluyor | PS 5.1 `Get-Content` varsayılan ANSI okur | Kaynak dosyaları PowerShell ile düzenleme |
 | Alembic `type "asset_status" already exists` | Enum başka migration'da oluşturulmuş | `postgresql.ENUM(..., create_type=False)` |
+| Haritada tek varlık görünmüyor ama sayaç dolu — **sadece Docker sürümünde** | MapLibre worker kodunu kendi içine gömülü metinden üretiyor; Vite 8'in paketleyicisi modülleri birleştirirken bu metnin dış bağlarını koparıyor → worker `ar is not defined` verip GeoJSON'u hiç işleyemiyor | `maplibre-gl-csp` sürümü + `...csp-worker.js?url` ile `setWorkerUrl()`: worker paketlemeye hiç girmiyor |
+| Container `unhealthy`, oysa site dışarıdan açılıyor | Nginx sadece IPv4 dinliyor; container içinde `localhost` önce `::1`'e çözümleniyor | `listen [::]:80` ekle, sağlık kontrolünde `127.0.0.1` kullan |
+| Üretimde hatanın izi yok | Hata kaydı `if (import.meta.env.DEV)` içindeydi | Hata kayıtlarını asla ortama bağlama — sadece ayrıntı seviyesini değiştir |
 
 ---
 

@@ -47,21 +47,6 @@ Hepsi bu. Node.js veya Python kurmana gerek yok.
 
 ---
 
-## 🖼️ Ekran Görüntüleri
-
-> _Buraya kendi ekran görüntülerini ekle: `docs/screenshots/` klasörüne koyup
-> aşağıdaki bağlantıları güncelle._
-
-| Harita | Gösterge Paneli |
-|---|---|
-| ![Harita](docs/screenshots/harita.png) | ![Dashboard](docs/screenshots/dashboard.png) |
-
-| Varlık Tablosu | Bakım Geçmişi |
-|---|---|
-| ![Tablo](docs/screenshots/tablo.png) | ![Bakım](docs/screenshots/bakim.png) |
-
----
-
 ## 🏗️ Mimari
 
 ```mermaid
