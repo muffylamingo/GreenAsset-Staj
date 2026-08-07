@@ -143,6 +143,9 @@ Sarmalayıcılar: `Feature` (geometri + properties), `FeatureCollection` (featur
 | **shapely** | Geometri işlemleri (Python tarafı) | `mapping()`, `shape()` — GeoJSON dönüşümü |
 | **python-dotenv** | `.env` okuma | — |
 | **faker** | Sahte veri | `faker.latitude()`, seed script |
+| **PyJWT** | Oturum bileti üretme/doğrulama | `jwt.encode()`, `jwt.decode()` |
+| **bcrypt** | Parola özetleme | `hashpw()`, `checkpw()` |
+| **python-multipart** | Form verisi okuma | Sadece Swagger'ın Authorize formu için gerekli |
 | **pytest** + **httpx** | Test | `TestClient`, fixture |
 | **ruff** | Lint + format | `ruff check --fix` |
 
@@ -168,11 +171,246 @@ class AssetCreate(BaseModel):
 Bu 6 satır, ödevdeki "isim boş olamaz, koordinat sayı olmalı" şartını backend'de karşılar.
 **Validation her iki tarafta da yapılır** — frontend kullanıcı deneyimi için, backend güvenlik için.
 
+### 3.5 İlişkili tablolar (1-N) ve `column_property`
+
+`assets` ile `maintenance_logs` arasında **bire-çok** ilişki var: bir varlığın
+birden çok bakım kaydı olabilir.
+
+```python
+# maintenance.py — "çok" tarafı, yabancı anahtarı O tutar
+asset_id: Mapped[uuid.UUID] = mapped_column(
+    ForeignKey("assets.id", ondelete="CASCADE")
+)
+```
+
+**`ON DELETE CASCADE`:** varlık silinince kayıtları da silinir. Bunu
+veritabanı yapar, uygulama kodu değil — daha güvenilir, çünkü hangi yoldan
+silinirse silinsin çalışır.
+
+**N+1 problemi ve çözümü.** 25 varlık listelerken her biri için "son bakım
+tarihi" ayrı sorguyla çekilseydi 1 + 25 = 26 sorgu atılırdı. Çözüm:
+
+```python
+# models/__init__.py
+Asset.last_maintenance_at = column_property(
+    select(func.max(MaintenanceLog.performed_at))
+    .where(MaintenanceLog.asset_id == Asset.id)
+    .correlate_except(MaintenanceLog)
+    .scalar_subquery()
+)
+```
+
+Artık her varlık satırıyla birlikte tek sorguda geliyor.
+
+> ⚠️ Bu tanım neden `asset.py`'de değil `models/__init__.py`'de?
+> `asset.py`, `maintenance.py`'yi import etseydi, `maintenance.py` de
+> `asset.py`'yi import ettiği için **döngüsel import** olurdu. İki model de
+> yüklendikten sonra bağlıyoruz.
+
+**İlişki yönleri:**
+
+| Terim | Anlamı |
+|---|---|
+| `relationship()` | Python tarafındaki bağlantı (SQL'de karşılığı yok) |
+| `back_populates` | İki yönlü bağlantı: `asset.maintenance_logs` ↔ `log.asset` |
+| `cascade="all, delete-orphan"` | Python tarafında silme davranışı |
+| `ondelete="CASCADE"` | **Veritabanı** tarafında silme davranışı |
+| `lazy="joined"` | İlişkiyi JOIN ile birlikte çek (ayrı sorgu atma) |
+
 ---
 
-## 3.5 Swagger (`/docs`) — Kullanım Rehberi
+### 3.6 Kimlik Doğrulama ve Yetkilendirme
 
-**http://localhost:8000/docs**
+İki farklı kavram, sık karıştırılır:
+
+| | Soru | HTTP kodu |
+|---|---|---|
+| **Authentication** (kimlik doğrulama) | "Sen kimsin?" | 401 Unauthorized |
+| **Authorization** (yetkilendirme) | "Bunu yapabilir misin?" | 403 Forbidden |
+
+401 = "seni tanımıyorum, giriş yap". 403 = "seni tanıyorum ama bu iş sana kapalı".
+
+#### Parola nasıl saklanır?
+
+**Asla düz metin olarak saklanmaz.** bcrypt kullanıyoruz:
+
+```python
+ozet = bcrypt.hashpw(parola.encode(), bcrypt.gensalt())
+dogru_mu = bcrypt.checkpw(parola.encode(), ozet)
+```
+
+- **Tek yönlü:** özetten parolaya dönülemez
+- **Tuz (salt):** her özet rastgele bir tuz içerir → aynı parola iki kullanıcıda
+  farklı özet üretir → hazır özet tabloları (rainbow table) işe yaramaz
+- **Yavaş olması özellik:** bcrypt bilerek yavaştır, kaba kuvvet saldırısını zorlaştırır
+
+#### JWT (JSON Web Token) nedir?
+
+Giriş yaptıktan sonra verilen "bilet". Üç parçadan oluşur, noktayla ayrılır:
+
+```
+eyJhbGciOiJIUzI1NiJ9 . eyJzdWIiOiIxMjMiLCJyb2xlIjoiQURNSU4ifQ . SflKxwRJSMeKKF2QT4f
+└──── header ────┘   └────────── payload ──────────┘   └──── signature ────┘
+     algoritma              içerik (kim, rol, süre)          imza
+```
+
+🚨 **En kritik nokta: payload ŞİFRELİ DEĞİL, sadece İMZALI.**
+Herkes base64 çözüp içindekini okuyabilir; kimse **değiştiremez** (imza tutmaz).
+Bu yüzden token'a gizli bilgi konmaz — kullanıcı adı ve rol yazmakta sakınca yok.
+
+**Sunucu oturum saklamaz.** Token'ın kendisi kanıttır; sunucu sadece imzayı
+doğrular. Buna *stateless* denir.
+
+#### FastAPI'de nasıl kuruluyor?
+
+```python
+# Bağımlılık (dependency): token'ı çöz, kullanıcıyı bul
+def get_current_user(token = Depends(oauth2_scheme), db = Depends(get_db)) -> User:
+    icerik = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+    return db.get(User, uuid.UUID(icerik["sub"]))
+
+# Bir ucu korumak tek satır:
+@router.delete("/{id}", dependencies=[Depends(require_admin)])
+```
+
+Bu projede koruma **tek tek uçlara değil router'a** bağlı:
+
+```python
+app.include_router(assets.router, dependencies=[Depends(get_current_user)])
+```
+
+Böylece yeni bir uç eklendiğinde korumayı yazmayı unutmak mümkün değil —
+varsayılan kapalı, açmak için bilinçli çaba gerekir.
+
+#### Bilmen gereken 4 güvenlik kuralı
+
+1. **"Kullanıcı yok" ile "parola yanlış" AYNI mesajı dönmeli.** Farklı olursa
+   saldırgan hangi kullanıcı adlarının var olduğunu tek tek deneyerek öğrenir
+   (*user enumeration*).
+2. **Yetkiyi token'daki role değil veritabanına sorarak kontrol et.** Token
+   12 saat geçerli; o sürede kullanıcı pasifleştirilmiş olabilir.
+3. **Arayüzde buton gizlemek güvenlik değildir.** Kullanıcı deneyimidir.
+   Asıl koruma sunucuda olmalı — istemci kodu değiştirilebilir.
+4. **`SECRET_KEY` gizli kalmalı.** Anahtarı bilen herkes geçerli token
+   üretebilir. Üretimde `.env`'den gelmeli, koda yazılmamalı.
+
+#### Frontend tarafı
+
+```js
+// Her isteğe bileti ekle
+client.interceptors.request.use((config) => {
+  config.headers.Authorization = `Bearer ${token}`
+  return config
+})
+
+// 401 gelirse oturumu kapat
+if (error.response.status === 401) oturumuSonlandir()
+```
+
+> **Token nerede saklanır?** Bu projede `localStorage` (sayfa yenilenince
+> oturum kaybolmasın diye). ⚠️ `localStorage` XSS'e karşı korumasızdır —
+> sayfaya kötü script enjekte edilirse token okunabilir. Daha güvenli yol
+> **HttpOnly cookie**'dir; JavaScript onu okuyamaz. Bu projede basitlik için
+> `localStorage` seçildi ve bu bilinçli bir ödün.
+
+---
+
+### 3.8 Güvenlik Sertleştirmesi (teslim öncesi eklendi)
+
+Kimlik doğrulama tek başına yetmez. Denetimde bulunup kapatılan üç eksik:
+
+#### a) İstek hızı sınırı — kaba kuvvet koruması
+
+**Sorun:** Giriş ucuna sınırsız deneme yapılabiliyordu. 12 yanlış parola
+denedik, 12'si de `401` döndü — hiçbir engelleme yok. Saldırgan saniyede
+yüzlerce parola deneyip zayıf bir parolayı er geç bulur.
+
+**Çözüm:** `slowapi` (`app/core/limiter.py`)
+
+```python
+@router.post("/login")
+@limiter.limit("10/minute")          # 11. deneme → 429
+def login(request: Request, ...):    # `request` şart, onsuz decorator çalışmaz
+```
+
+**⚠️ Proxy tuzağı:** Uygulama Nginx'in arkasında. Doğrudan bakarsak her isteğin
+kaynağı Nginx'in IP'si görünür — yani **bütün kullanıcılar tek sayaçta
+toplanır**. Bir kişi sınırı doldurunca herkes kilitlenir, saldırgan ise
+kimseyi engellemeden devam eder. Sınır hem işe yaramaz hem zarar verir.
+
+```python
+def istemci_adresi(request):
+    iletilen = request.headers.get("X-Forwarded-For")
+    # Nginx kendi gördüğü gerçek IP'yi listenin SONUNA ekler.
+    # Baştakiler istemciden gelir → taklit edilebilir.
+    return iletilen.split(",")[-1].strip() if iletilen else get_remote_address(request)
+```
+
+**Neden sayaç başarılı/başarısız ayrımı yapmıyor?** Sadece başarısızları
+sayardık, saldırgan araya bildiği bir hesapla doğru giriş serpiştirip sayacı
+sıfırlardı.
+
+#### b) Denetim izi (`audit_logs`) — "kim yaptı?"
+
+**Sorun:** Hiçbir kayıtta kim oluşturdu/değiştirdi bilgisi yoktu. Toplu bir
+silme olsa kimin yaptığı söylenemezdi.
+
+**Neden `assets` tablosuna `created_by` kolonu eklemedik?** Çünkü asıl soru
+şuydu: *"kayıtlar silindi, kim sildi?"* Kayıt silinince üzerindeki kolon da
+gider. **Denetim izi, izlediği kaydın ömründen bağımsız yaşamalıdır** →
+ayrı tablo.
+
+İki kritik tasarım kararı:
+
+| Karar | Sebep |
+|---|---|
+| `entity_id` **ForeignKey değil** | FK olsaydı ya silme engellenirdi ya CASCADE izi de silerdi — ikisi de istediğimizin tersi |
+| `username` hem ilişki hem **metin** | Hesap silinse bile "bunu kim yaptı" okunur kalsın; geçmiş dondurulur |
+
+```python
+# app/crud/audit.py — burada commit YOK.
+# Kayıt, kendisini doğuran işlemin transaction'ına katılır.
+```
+
+#### c) Güvenlik başlıkları (`frontend/security-headers.conf`)
+
+| Başlık | Ne yapar |
+|---|---|
+| `Content-Security-Policy` | XSS'e karşı **son savunma hattı**: script sokulsa bile listede olmayan kaynak çalışmaz |
+| `X-Frame-Options: DENY` | Clickjacking — sayfa iframe'e alınamaz |
+| `X-Content-Type-Options: nosniff` | Tarayıcı dosya türünü tahmin etmesin |
+| `Referrer-Policy` | Başka siteye geçerken tam adres (kayıt kimliği içerebilir) sızmasın |
+| `server_tokens off` | Nginx sürümü sızmasın |
+
+**⚠️ Nginx tuzağı:** `add_header` **miras alınmaz**. Bir `location` bloğunda
+tek bir `add_header` varsa, üst bloktaki bütün başlıklar o location için
+sessizce kaybolur. Bizim `location /` bloğunda zaten `Cache-Control` vardı —
+başlıkları sadece server seviyesine yazsaydık ana sayfada hiç görünmezlerdi.
+Çözüm: ayrı dosya + her `location`'a `include`.
+
+**CSP yazdıktan sonra mutlaka test et.** Swagger tam buna takıldı: sayfa
+açılıyordu ama arayüz hiç çizilmiyordu, çünkü kendi dosyalarını CDN'den
+yüklüyor. Çözüm ana CSP'yi gevşetmek değil, **sadece `/docs` yoluna özel**
+bir CSP yazmaktı.
+
+#### d) Varsayılan `SECRET_KEY` artık bir engel
+
+Uyarı yorumu koruma sağlamaz. Bu depoda yazılı olan varsayılan anahtarla
+`rol=ADMIN` diyen sahte bir token üretmek mümkündür — **parolayı bilmeye bile
+gerek kalmadan**. Artık:
+
+```python
+if settings.uretim_mi and settings.SECRET_KEY == GELISTIRME_ANAHTARI:
+    raise RuntimeError(...)   # ENVIRONMENT=production ise uygulama HİÇ AÇILMAZ
+```
+
+Erken ve gürültülü hata, sessiz açıktan her zaman iyidir.
+
+---
+
+## 3.7 Swagger (`/docs`) — Kullanım Rehberi
+
+**http://localhost:3000/docs** (veya doğrudan backend'den: `localhost:8000/docs`)
 
 Bu sayfayı FastAPI **otomatik** üretir; tek satır kod yazmadık. Kodda ne varsa
 sayfada o görünür — yeni bir uç eklersen anında burada belirir.
@@ -323,9 +561,14 @@ Dokümantasyonu birine göstereceksen ReDoc daha derli toplu görünür.
 | **zod** + `@hookform/resolvers` | Şema doğrulama | `z.object({...})`, `zodResolver` |
 | **@tanstack/react-query** | Sunucu verisi | `useQuery`, `useMutation`, `invalidateQueries` |
 | **axios** | HTTP | `axios.create({ baseURL })`, interceptor |
-| **recharts** | Grafik | `PieChart`, `BarChart`, `ResponsiveContainer` |
-| **lucide-react** | İkon | `<TreePine />`, `<Lightbulb />` |
+| **recharts** v2 | Grafik | `BarChart`, `AreaChart`, `ResponsiveContainer`, `isAnimationActive` |
+| **react-i18next** | Çoklu dil | `useTranslation()`, `t('anahtar')`, `changeLanguage()` |
+| **@fontsource/\*** | Self-host font | CDN'e bağımlı kalmamak için |
 | **react-hot-toast** | Bildirim | `toast.success('Eklendi')` |
+
+> İkon için `lucide-react` yerine **Material Symbols SVG'leri** tek tek inline
+> ediliyor (`src/components/ui/Icon.jsx`). Sebep: variable font 7792 ikon
+> içeriyor ve **3.96 MB**; biz 35 tanesini kullanıyoruz → ~8 KB.
 
 ### 4.3 MapLibre'de bilmen gereken kavramlar
 
@@ -423,6 +666,33 @@ dist/
 | `psycopg` derleme hatası (Windows) | Yanlış paket | `psycopg[binary]` kur, ya da Docker kullan |
 | Alembic geometri kolonunu her seferinde siliyor | GeoAlchemy2 uyumsuzluğu | `alembic/env.py` içinde `include_object` ile `spatial_ref_sys` tablosunu hariç tut |
 
+### Bu projede gerçekten karşılaştıklarımız
+
+Aşağıdakiler teorik değil — hepsi bu projede başımıza geldi ve saatler yedi.
+
+| Hata | Sebep | Çözüm |
+|---|---|---|
+| `bg-${degisken}` rengi hiç çıkmıyor | Tailwind sınıf adlarını kaynak kodda **metin olarak** arar; dinamik isimler hiç üretilmez | Sınıfları tam metin olarak yaz, nesnede sakla |
+| Tablo kaydırılmıyor, satırlar kırpılıyor | Flexbox: `flex-1` olan öğe varsayılan `min-height:auto` ile içeriğinden küçülemez | Kaydırılacak kutuya **`min-h-0`** ekle |
+| Recharts barları hiç çizilmiyor | Büyüme animasyonu `requestAnimationFrame` ile; sekme arka plandaysa rAF durur, bar sıfır genişlikte kalır | `isAnimationActive={false}` |
+| MapLibre `does not provide an export named 'default'` | v6 varsayılan export'u kaldırdı | Kararlı **v5** kullan (tüm dokümantasyon da onu anlatıyor) |
+| Harita katmanları hiç eklenmiyor | Tema `useEffect`'i ilk render'da da `setStyle()` çağırıp yükleme zincirini bozuyor; `styledata` olayında `isStyleLoaded()` hep `false` | İlk render'ı atla + **`style.load`** olayını kullan |
+| `GET /assets/nearby` → 422 | `GET /assets/{id}` daha önce kayıtlı; "nearby" kelimesi UUID sanılıyor | Özel yolları `/{id}`'den **ÖNCE** kaydet |
+| Nominatim detaylı adresi bulamıyor | Serbest metni bütün olarak eşleştiriyor; karşılığı olmayan tek kelime sonucu sıfırlıyor | Sonuç boşsa sondan bir kelime atıp tekrar dene |
+| Excel'de `Ã‡Ä±nar` görünüyor | CSV'de UTF-8 BOM yok | Dosyanın başına BOM ekle, ayraç olarak `;` kullan |
+| PowerShell'le düzenlenen dosyada Türkçe bozuluyor | PS 5.1 `Get-Content` varsayılan ANSI okur | Kaynak dosyaları PowerShell ile düzenleme |
+| Alembic `type "asset_status" already exists` | Enum başka migration'da oluşturulmuş | `postgresql.ENUM(..., create_type=False)` |
+| Haritada tek varlık görünmüyor ama sayaç dolu — **sadece Docker sürümünde** | MapLibre worker kodunu kendi içine gömülü metinden üretiyor; Vite 8'in paketleyicisi modülleri birleştirirken bu metnin dış bağlarını koparıyor → worker `ar is not defined` verip GeoJSON'u hiç işleyemiyor | `maplibre-gl-csp` sürümü + `...csp-worker.js?url` ile `setWorkerUrl()`: worker paketlemeye hiç girmiyor |
+| Container `unhealthy`, oysa site dışarıdan açılıyor | Nginx sadece IPv4 dinliyor; container içinde `localhost` önce `::1`'e çözümleniyor | `listen [::]:80` ekle, sağlık kontrolünde `127.0.0.1` kullan |
+| Üretimde hatanın izi yok | Hata kaydı `if (import.meta.env.DEV)` içindeydi | Hata kayıtlarını asla ortama bağlama — sadece ayrıntı seviyesini değiştir |
+| Güvenlik başlıkları görünmüyor (Nginx'e yazdığımız hâlde) | Nginx'te `add_header` **miras alınmaz**: bir `location` içinde tek bir `add_header` varsa üst bloktakiler o location için tamamen kaybolur | Başlıkları ayrı dosyaya al, her `location`'a `include` et |
+| Rate limit herkesi birden kilitliyor | Proxy arkasında `remote_addr` hep Nginx'in IP'si → tüm kullanıcılar tek sayaçta | `X-Forwarded-For`'un **son** parçasını kullan (baştakiler taklit edilebilir) |
+| Denetim kaydı silinen varlıkla birlikte kayboluyor | `entity_id` ForeignKey yapılmıştı; CASCADE izi de sildi | Denetim tablosunda kimlik alanı FK **olmamalı** — iz, izlediği kayıttan bağımsız yaşar |
+| `alembic --autogenerate` alakasız değişiklikler üretiyor | Aynı kuralın iki farklı yazımını (unique constraint ↔ unique index) fark sanıyor | Üretilen migration'ı **her zaman** elden geçir, gereksiz satırları sil |
+| `localhost:3000/docs` Swagger yerine uygulamayı açıyor | `/docs` diye dosya yok; SPA kuralı bulunamayan her yolu `index.html`'e devrediyor — sayfa "çalışıyor" ama yanlış şeyi gösteriyor | Nginx'te `/docs`, `/redoc`, `/openapi.json` yollarını backend'e proxy'le |
+| Swagger sayfası açılıyor ama arayüz hiç çizilmiyor | Swagger dosyalarını CDN'den yüklüyor, CSP `script-src 'self'` engelliyor | Ana CSP'yi gevşetme; **sadece o yola özel** CSP yaz |
+| Lint 1700 uyarı veriyor | RUF001/002/003 Türkçe karakterleri (ı, ş, ğ, —) "belirsiz Unicode" sayıyor | Kuralları açıkça seç; gürültülü lint, kapatılan lint demektir |
+
 ---
 
 ## 8. Kaynaklar
@@ -441,6 +711,12 @@ dist/
 | Recharts | https://recharts.org/en-US/examples |
 | GeoJSON spesifikasyonu (RFC 7946) | https://datatracker.ietf.org/doc/html/rfc7946 |
 | Conventional Commits | https://www.conventionalcommits.org/tr/ |
+| FastAPI güvenlik / OAuth2 | https://fastapi.tiangolo.com/tutorial/security/ |
+| JWT nasıl çalışır (kurcala) | https://jwt.io |
+| bcrypt neden yavaş olmalı | https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html |
+| SQLAlchemy ilişkiler | https://docs.sqlalchemy.org/en/20/orm/relationships.html |
+| Nominatim kullanım politikası | https://operations.osmfoundation.org/policies/nominatim/ |
+| Recharts örnekler | https://recharts.org/en-US/examples |
 
 ---
 
@@ -464,3 +740,75 @@ dist/
 **"Katmanlı mimariden ne anlıyorsun?"**
 > API katmanı HTTP'yi bilir, CRUD katmanı veritabanını bilir, model katmanı tabloyu tanımlar.
 > Bu sayede yarın FastAPI'yi bırakıp başka framework'e geçsem CRUD katmanım aynen kalır.
+
+**"JWT nasıl çalışıyor, oturumu nerede saklıyorsun?"**
+> Hiçbir yerde — *stateless*. Token'ın kendisi kanıt: içinde kullanıcı kimliği
+> ve rol yazıyor, sunucunun gizli anahtarıyla imzalı. Sunucu her istekte imzayı
+> doğruluyor. İçerik şifreli değil, sadece imzalı; herkes okuyabilir ama kimse
+> değiştiremez. Bu yüzden token'a gizli bilgi koymuyorum. Yetki kontrolünde
+> token'daki role değil veritabanına bakıyorum, çünkü token 12 saat geçerli ve
+> o sürede kullanıcının rolü değişmiş olabilir.
+
+**"Parolaları nasıl saklıyorsun?"**
+> Saklamıyorum — bcrypt özetini saklıyorum. Tek yönlü, geri döndürülemez.
+> Her özet rastgele bir tuz içeriyor, o yüzden aynı parolaya sahip iki kullanıcının
+> özeti farklı; hazır özet tabloları işe yaramıyor. bcrypt'in yavaş olması da
+> kasıtlı, kaba kuvvet saldırısını zorlaştırıyor.
+
+**"Arayüzde silme butonunu gizledin, bu yeterli mi?"**
+> Hayır, o sadece kullanıcı deneyimi — saha ekibi basıp hata almasın diye.
+> Asıl koruma sunucuda: `require_admin` bağımlılığı. Test ettim, saha rolüyle
+> DELETE isteği 403 dönüyor. İstemci kodu değiştirilebilir, sunucu değiştirilemez.
+
+**"Güvenlik için ne yaptın?"**
+> Teslim öncesi denetim yaptım — tahminle değil, canlı istek atarak. Sağlam
+> çıkanlar: token'sız istek 401, sahte token 401 (500 değil, yani hata yakalama
+> doğru), saha rolü DELETE'te 403, geçersiz girdiler 422. Kapattığım açıklar:
+> giriş ucunda hız sınırı yoktu, "kim yaptı" izi yoktu, güvenlik başlıkları
+> yoktu. Referansım OWASP API Security Top 10'du; listenin 1 numarası olan
+> *Broken Object Level Authorization* için özel test yazdım.
+
+**"Rate limit'i neden koydun, nasıl çalışıyor?"**
+> Kaba kuvvet saldırısına karşı: sınır olmadan saldırgan saniyede yüzlerce
+> parola deneyebilir. `/auth/login` dakikada 10 deneme, aşılırsa 429.
+> En kritik detay proxy: Nginx arkasında olduğumuz için doğrudan baksaydım
+> bütün kullanıcılar tek sayaçta toplanırdı — bir kişi sınırı doldurunca
+> herkes kilitlenirdi. `X-Forwarded-For`'un son parçasını kullanıyorum,
+> çünkü baştakiler istemciden gelir ve taklit edilebilir.
+
+**"Denetim izini neden ayrı tabloya koydun?"**
+> Çünkü asıl soru "kayıtlar silindi, kim sildi?" idi. `assets` tablosuna
+> `created_by` kolonu eklesem kayıt silinince o kolon da giderdi. Denetim izi,
+> izlediği kaydın ömründen bağımsız yaşamalı. Aynı sebeple `entity_id`'yi
+> bilerek ForeignKey yapmadım — FK olsaydı ya silme engellenirdi ya CASCADE
+> izi de silerdi. Kullanıcı adını metin olarak da saklıyorum ki hesap silinse
+> bile iz okunur kalsın.
+
+**"CSP nedir, projende ne yapıyor?"**
+> Tarayıcıya "bu sayfada sadece şu kaynaklardan içerik çalışabilir" diyen bir
+> başlık. XSS'i engellemez ama XSS'in işe yaramasını engeller — katmanlı
+> savunma. Bende `script-src 'self'`, yani satır içi script hiç çalışmıyor.
+> `connect-src` de önemli: saldırgan script çalıştırsa bile veriyi sadece
+> izin verdiğim üç adrese gönderebilir. Swagger'ı eklerken sayfa açılıp
+> arayüz çizilmedi çünkü dosyalarını CDN'den yüklüyor; çözüm ana politikayı
+> gevşetmek değil, sadece `/docs` yoluna özel politika yazmaktı.
+
+**"Testlerin neyi koruyor?"**
+> Test kodun çalıştığını değil, **bozulduğunu** haber verir; değeri altı ay
+> sonra biri o kodu değiştirdiğinde ortaya çıkar. Özellikle gözle görünmeyen
+> kurallar için: yetki kontrolü kaldırılsa arayüzde hiçbir şey değişmez, ama
+> `test_saha_SILEMEZ_403` anında kırılır. 61 testin çoğu entegrasyon
+> seviyesinde, gerçek PostGIS'e karşı çalışıyor — `ST_Within`'i taklit etmek
+> anlamsız olurdu, test edilmesi gereken şey zaten onun kendisi.
+
+**"N+1 problemi nedir, karşılaştın mı?"**
+> Evet. 25 varlık listelerken her biri için "son bakım tarihi" ayrı sorguyla
+> çekilseydi 26 sorgu atılırdı. `column_property` + `scalar_subquery` ile
+> alt sorguyu ana sorguya gömdüm; tek sorguda geliyor.
+
+**"Renk seçimlerini neye göre yaptın?"**
+> Durum renklerini renk körlüğü doğrulayıcısından geçirdim. Koyu tema paleti
+> **reddedildi**: protanopi altında yeşil ile amber arasındaki fark ΔE 7.3'tü,
+> eşik 8. Yani kırmızı-yeşil renk körü biri "İyi" ile "Bakım Lazım"ı ayırt
+> edemeyecekti. Yeşili koyulaştırıp amberi açarak ΔE 17.5'e çıkardım.
+> Ayrıca renk hiçbir yerde tek başına bilgi taşımıyor, her zaman metinle birlikte.

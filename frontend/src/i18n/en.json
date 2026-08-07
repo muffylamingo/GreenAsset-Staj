@@ -138,6 +138,13 @@
     "exportGeojson": "Download GeoJSON",
     "share": "share"
   },
+  "nearby": {
+    "title": "Near me",
+    "search": "Find my location and search",
+    "onlyProblems": "Only needs maintenance / broken",
+    "found": "{{count}} assets found",
+    "noResult": "No assets within this radius"
+  },
   "spatial": {
     "drawTitle": "Area query",
     "drawHint": "Draw an area on the map and I'll list the assets inside",
@@ -200,5 +207,10 @@
   "common": {
     "loading": "Loading...",
     "close": "Close"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "description": "This address doesn't exist. The link may be outdated or mistyped.",
+    "backToMap": "Back to map"
   }
 }

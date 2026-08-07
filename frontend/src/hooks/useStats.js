@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
 
-import { getSummary, getTimeseries, queryWithin } from '../api/stats'
+import { getSummary, getTimeseries, queryNearby, queryWithin } from '../api/stats'
 
 /** Dashboard özeti — KPI'lar ve dağılımlar. */
 export function useSummary(districtLimit = 8) {
@@ -27,4 +27,9 @@ export function useWithinQuery() {
   return useMutation({
     mutationFn: ({ polygon, filtreler }) => queryWithin(polygon, filtreler),
   })
+}
+
+/** Yakındaki varlıklar — kullanıcı "yakınımdakiler"e basınca çalışır. */
+export function useNearbyQuery() {
+  return useMutation({ mutationFn: queryNearby })
 }

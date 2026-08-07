@@ -6,12 +6,25 @@ Swagger:     http://localhost:8000/docs
 
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 from sqlalchemy import text
 
-from app.api.v1 import assets, auth, districts, export, maintenance, spatial, stats
+from app.api.v1 import (
+    assets,
+    audit,
+    auth,
+    districts,
+    export,
+    maintenance,
+    spatial,
+    stats,
+)
 from app.core.config import settings
 from app.core.database import engine
 from app.core.deps import get_current_user
+from app.core.limiter import limiter
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -25,6 +38,13 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc",
 )
+
+# --- İstek hızı sınırı ---
+# Middleware genel sınırı (300/dk) BÜTÜN uçlara uygular; ayrıca tek tek
+# uçlara daha sıkı sınır konabilir (bkz. auth.py'deki /login).
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
 
 # --- CORS ---
 # Tarayıcı, farklı porttaki (5173) React uygulamasının bu API'ye (8000)
@@ -60,7 +80,7 @@ def health():
             conn.execute(text("SELECT 1"))
             postgis_version = conn.execute(text("SELECT PostGIS_Version()")).scalar()
             db_ok = True
-    except Exception as exc:  # noqa: BLE001 — health ucu asla patlamamalı
+    except Exception as exc:
         postgis_version = f"hata: {exc.__class__.__name__}"
 
     return {
@@ -95,3 +115,5 @@ app.include_router(
     districts.router, prefix=settings.API_V1_PREFIX, dependencies=korumali
 )
 app.include_router(stats.router, prefix=settings.API_V1_PREFIX, dependencies=korumali)
+# Denetim kayıtları: router kendi içinde ayrıca require_admin istiyor.
+app.include_router(audit.router, prefix=settings.API_V1_PREFIX, dependencies=korumali)

@@ -25,6 +25,21 @@ export async function queryWithin(polygon, filtreler = {}) {
 }
 
 /**
+ * Bir noktanın yakınındaki varlıklar (ST_DWithin).
+ *
+ * radius METRE cinsinden — backend `::geography` cast'i yapıyor.
+ * statuses verilirse sadece o durumdakiler döner (saha ekibi genelde
+ * sadece bakım bekleyenleri arıyor).
+ */
+export async function queryNearby({ lat, lon, radius = 500, statuses }) {
+  const params = new URLSearchParams({ lat, lon, radius })
+  statuses?.forEach((s) => params.append('status', s))
+
+  const { data } = await client.get('/assets/nearby', { params })
+  return data
+}
+
+/**
  * Dışa aktarma bağlantısı üretir.
  *
  * Neden axios ile indirmiyoruz? Dosyayı JavaScript'e çekip Blob'a çevirmek

@@ -14,15 +14,17 @@ from __future__ import annotations
 import uuid
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.api.converters import asset_to_feature, asset_to_out
 from app.core.database import get_db
-from app.core.deps import require_admin
+from app.core.deps import CurrentUser, require_admin
 from app.crud import asset as crud
+from app.crud.audit import denetim_yaz
 from app.models.asset import AssetStatus, AssetType
+from app.models.audit import AuditAction
 from app.schemas.asset import (
     AssetCreate,
     AssetFeatureCollection,
@@ -70,8 +72,20 @@ def _parse_bbox(bbox: str | None) -> tuple[float, float, float, float] | None:
         "noktanın hangi ilçeye düştüğünü `ST_Within` ile otomatik belirler."
     ),
 )
-def create_asset(payload: AssetCreate, db: DbSession) -> AssetOut:
+def create_asset(
+    payload: AssetCreate, db: DbSession, kullanici: CurrentUser, request: Request
+) -> AssetOut:
     asset = crud.create_asset(db, payload)
+    denetim_yaz(
+        db,
+        kullanici=kullanici,
+        action=AuditAction.CREATE,
+        entity_type="asset",
+        entity_id=asset.id,
+        summary=asset.name,
+        request=request,
+    )
+    db.commit()
     return asset_to_out(asset)
 
 
@@ -113,7 +127,7 @@ def list_assets(
         Literal["name", "type", "status", "created_at", "updated_at"], Query()
     ] = "created_at",
     sort_dir: Annotated[Literal["asc", "desc"], Query()] = "desc",
-    format: Annotated[  # noqa: A002 — API sözleşmesinde 'format' adı bekleniyor
+    format: Annotated[
         Literal["geojson", "json"], Query(description="Çıktı biçimi")
     ] = "geojson",
 ):
@@ -163,8 +177,20 @@ class BulkResult(BaseModel):
 
 
 @router.patch("/bulk/status", response_model=BulkResult, summary="Toplu durum değiştir")
-def bulk_status(payload: BulkStatusPayload, db: DbSession) -> BulkResult:
-    return BulkResult(affected=crud.bulk_update_status(db, payload.ids, payload.status))
+def bulk_status(
+    payload: BulkStatusPayload, db: DbSession, kullanici: CurrentUser, request: Request
+) -> BulkResult:
+    sayi = crud.bulk_update_status(db, payload.ids, payload.status)
+    denetim_yaz(
+        db,
+        kullanici=kullanici,
+        action=AuditAction.BULK_UPDATE,
+        entity_type="asset",
+        summary=f"{sayi} varlık → {payload.status.value}",
+        request=request,
+    )
+    db.commit()
+    return BulkResult(affected=sayi)
 
 
 @router.post(
@@ -174,14 +200,26 @@ def bulk_status(payload: BulkStatusPayload, db: DbSession) -> BulkResult:
     description="⚠️ Yalnızca **yönetici**. Saha ekibi 403 alır.",
     dependencies=[Depends(require_admin)],
 )
-def bulk_delete(payload: BulkIdsPayload, db: DbSession) -> BulkResult:
-    return BulkResult(affected=crud.bulk_delete(db, payload.ids))
+def bulk_delete(
+    payload: BulkIdsPayload, db: DbSession, kullanici: CurrentUser, request: Request
+) -> BulkResult:
+    sayi = crud.bulk_delete(db, payload.ids)
+    denetim_yaz(
+        db,
+        kullanici=kullanici,
+        action=AuditAction.BULK_DELETE,
+        entity_type="asset",
+        summary=f"{sayi} varlık silindi",
+        request=request,
+    )
+    db.commit()
+    return BulkResult(affected=sayi)
 
 
 # ---------------------------------------------------------------------------
 # Tekil kayıt işlemleri
 # ---------------------------------------------------------------------------
-def _get_or_404(db: Session, asset_id: uuid.UUID):  # noqa: ANN202
+def _get_or_404(db: Session, asset_id: uuid.UUID):
     asset = crud.get_asset(db, asset_id)
     if asset is None:
         raise HTTPException(status_code=404, detail="Varlık bulunamadı")
@@ -202,9 +240,29 @@ def get_asset(asset_id: uuid.UUID, db: DbSession) -> AssetOut:
         "`ST_Within` ile yeniden hesaplanır."
     ),
 )
-def update_asset(asset_id: uuid.UUID, payload: AssetUpdate, db: DbSession) -> AssetOut:
+def update_asset(
+    asset_id: uuid.UUID,
+    payload: AssetUpdate,
+    db: DbSession,
+    kullanici: CurrentUser,
+    request: Request,
+) -> AssetOut:
     asset = _get_or_404(db, asset_id)
-    return asset_to_out(crud.update_asset(db, asset, payload))
+    # Hangi alanların değiştiğini kaydediyoruz. Sadece "güncellendi" demek,
+    # denetim kaydını okuyan kişiye hiçbir şey anlatmaz.
+    degisenler = ", ".join(payload.model_dump(exclude_unset=True).keys()) or "—"
+    guncel = crud.update_asset(db, asset, payload)
+    denetim_yaz(
+        db,
+        kullanici=kullanici,
+        action=AuditAction.UPDATE,
+        entity_type="asset",
+        entity_id=guncel.id,
+        summary=f"{guncel.name} · değişen alanlar: {degisenler}",
+        request=request,
+    )
+    db.commit()
+    return asset_to_out(guncel)
 
 
 @router.delete(
@@ -218,5 +276,21 @@ def update_asset(asset_id: uuid.UUID, payload: AssetUpdate, db: DbSession) -> As
     ),
     dependencies=[Depends(require_admin)],
 )
-def delete_asset(asset_id: uuid.UUID, db: DbSession) -> None:
-    crud.delete_asset(db, _get_or_404(db, asset_id))
+def delete_asset(
+    asset_id: uuid.UUID, db: DbSession, kullanici: CurrentUser, request: Request
+) -> None:
+    asset = _get_or_404(db, asset_id)
+    # Adı ŞİMDİ okuyoruz: silindikten sonra bu bilgi artık hiçbir yerde yok
+    # ve denetim kaydında yalnız bir kimlik numarası kalırdı.
+    ozet = f"{asset.name} ({asset.type.value})"
+    crud.delete_asset(db, asset)
+    denetim_yaz(
+        db,
+        kullanici=kullanici,
+        action=AuditAction.DELETE,
+        entity_type="asset",
+        entity_id=asset_id,
+        summary=ozet,
+        request=request,
+    )
+    db.commit()

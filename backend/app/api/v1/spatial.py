@@ -58,9 +58,9 @@ class MekansalSonuc(BaseModel):
 
     type: Literal["FeatureCollection"] = "FeatureCollection"
     features: list[dict[str, Any]]
-    totalCount: int  # noqa: N815 — GeoJSON tarafında camelCase yaygın
-    countsByStatus: dict[str, int]  # noqa: N815
-    countsByType: dict[str, int]  # noqa: N815
+    totalCount: int
+    countsByStatus: dict[str, int]
+    countsByType: dict[str, int]
 
 
 def _geometriyi_dogrula(geojson: dict[str, Any]) -> str:
@@ -120,7 +120,7 @@ def within(payload: PolygonSorgusu, db: DbSession) -> MekansalSonuc:
         LEFT JOIN districts d ON d.id = a.district_id
         WHERE {" AND ".join(kosullar)}
         ORDER BY a.created_at DESC
-        """  # noqa: S608 — koşullar sabit metinlerden kuruluyor, kullanıcı girdisi
+        """
         # parametre olarak bağlanıyor; SQL enjeksiyonu riski yok
     )
 
@@ -207,7 +207,7 @@ def nearby(
             WHERE {" AND ".join(kosullar)}
             ORDER BY mesafe_m
             LIMIT :limit
-            """  # noqa: S608 — bkz. within() içindeki not
+            """
         ),
         parametreler,
     ).all()

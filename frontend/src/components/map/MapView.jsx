@@ -1,7 +1,24 @@
 // MapLibre v5 kullanıyoruz (v6 değil): v6 yeni ve haritayı hiç çizdiremedik,
 // ayrıca varsayılan export'u kaldırdığı için tüm dokümantasyon/örneklerden
 // ayrışıyor. v5 kararlı sürüm ve her öğretici onu anlatıyor.
-import maplibregl from 'maplibre-gl'
+// MapLibre'nin "csp" sürümü + worker'ı AYRI dosya olarak.
+//
+// Neden normal 'maplibre-gl' değil? Normal sürüm, arka plan işçisini
+// (web worker) kendi kodunun içine gömülü bir metinden üretiyor. Vite 8'in
+// paketleyicisi (Rolldown) modülleri birleştirirken bu metnin dışarıya olan
+// bağlarını koparıyordu: worker "ar is not defined" hatası verip GeoJSON
+// kaynağını hiç işleyemiyor, haritada tek bir varlık görünmüyordu.
+// Geliştirme sunucusunda paketleme olmadığı için sorun sadece Docker/üretim
+// derlemesinde ortaya çıktı.
+//
+// "csp" sürümü worker kodunu içine gömmez, dışarıdan bir adresten yükler.
+// Vite'ın '?url' eki de dosyayı paketlemeye hiç sokmadan olduğu gibi
+// kopyalayıp adresini veriyor. Böylece worker, paketleyicinin modül
+// birleştirmesine hiç girmiyor ve bozulmuyor.
+import maplibregl from 'maplibre-gl/dist/maplibre-gl-csp'
+import workerUrl from 'maplibre-gl/dist/maplibre-gl-csp-worker.js?url'
+
+maplibregl.setWorkerUrl(workerUrl)
 import { useCallback, useEffect, useRef } from 'react'
 
 import { ASSET_TYPES } from '../../theme/statusColors'
@@ -18,9 +35,6 @@ import {
   KUME_RENGI,
   KUME_YARICAPI,
 } from './mapStyles'
-
-/** Boş bir GeoJSON — kaynaklar veri gelmeden önce bununla kuruluyor. */
-const BOS_KOLEKSIYON = { type: 'FeatureCollection', features: [] }
 
 /**
  * SVG metnini haritanın kullanabileceği piksel verisine çevirir.
@@ -321,9 +335,11 @@ export default function MapView({
     })
     harita.current = map
 
-    // Geliştirirken tarayıcı konsolundan haritayı incelemek için.
-    // Üretim derlemesinde bu satır tamamen elenir (tree-shaking).
-    if (import.meta.env.DEV) window.__harita = map
+    // Tarayıcı konsolundan haritayı incelemek için (window.__harita).
+    // Üretim derlemesinde de açık: harita çizim sorunları ancak canlı
+    // ortamda görülüyor ve bu referans olmadan teşhis edilemiyor.
+    // Harita nesnesi hassas veri tutmuyor, dışarı bir şey açmıyor.
+    window.__harita = map
 
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right')
     map.addControl(
@@ -348,8 +364,11 @@ export default function MapView({
     })
 
     map.on('error', (e) => {
-      // Sessizce yutulmasın; altlık/font hatalarını geliştirirken görelim
-      if (import.meta.env.DEV) console.warn('[MapLibre]', e.error?.message ?? e)
+      // Üretimde de yazılıyor. Önceden sadece geliştirmede yazıyordu; Docker
+      // sürümünde harita boş görününce konsolda hiçbir iz kalmadığı için
+      // sorunun nereden geldiği anlaşılamadı. Altlık/font/ikon hataları
+      // sessizce yutulmamalı.
+      console.warn('[MapLibre]', e.error?.message ?? e)
     })
 
     return () => {

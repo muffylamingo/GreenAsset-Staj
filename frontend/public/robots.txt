@@ -1,0 +1,8 @@
+# GreenAsset bir iç yönetim panelidir; arama motorlarında çıkmamalı.
+# Halka açık bir siteyi indekslettirmek isteseydik burası tam tersi olurdu
+# (Allow + sitemap.xml). Karar, sitenin kime hitap ettiğine göre verilir.
+#
+# Not: robots.txt bir GÜVENLİK önlemi DEĞİLDİR — sadece kibar botlara
+# "buraya bakma" der. Erişimi asıl engelleyen şey kimlik doğrulamadır.
+User-agent: *
+Disallow: /

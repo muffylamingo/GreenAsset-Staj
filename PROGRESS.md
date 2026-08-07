@@ -7,9 +7,54 @@
 
 ## Genel Durum
 
+### Ödevin istediği 5 aşama: **BİTTİ** ✅
+
 ```
-██████████████████████████████████████░░  95%
+████████████████████████████████████████  100%
 ```
+
+### Ek paket (7 madde): **HEPSİ BİTTİ** ✅
+
+```
+████████████████████████████████████████  100%
+```
+
+| Kod | Özellik | Durum |
+|---|---|---|
+| **B4** | Adres arama (Nominatim) | ✅ |
+| **B5** | Bakım geçmişi | ✅ |
+| **D1** | JWT rol bazlı yetki | ✅ |
+| — | Harita tip ikonları (zoom'a bağlı) | ✅ |
+| **B1** | Yakındakiler arayüzü | ✅ |
+| **C2** | Pytest — 53 test | ✅ |
+| **C5** | Frontend Docker + README | ✅ |
+
+### Sıfırdan kurulum doğrulandı
+
+`docker compose down -v` ile her şey silinip tek komutla yeniden kuruldu:
+
+| Kontrol | Sonuç |
+|---|---|
+| `docker compose up -d` | 4 servis ayakta, healthcheck'ler yeşil |
+| Migration'lar | **Otomatik uygulandı** (5 tablo oluştu) |
+| Seed | 1475 varlık, 1062 bakım kaydı, 2 kullanıcı |
+| Giriş (Nginx proxy) | OK |
+| Dashboard istatistikleri | 1475 / 334 / 92 |
+| GeoJSON | `FeatureCollection`, koordinat sırası doğru |
+| İlçeler | 39 |
+| `ST_DWithin` | 25 varlık |
+| `ST_Within` | 69 varlık |
+| Uygulama sayfası | Başlık ve içerik doğru |
+| gzip + önbellek | Aktif, `immutable` başlığı doğru |
+
+### Kalan tek isteğe bağlı iş
+
+**C3 — GitHub Actions CI** (~2 saat). 53 test var, otomatik çalıştırmak
+PR'da yeşil tik gösterir. Zorunlu değil, teslim buna bağlı değil.
+
+---
+
+## Aşama durumları (ödev)
 
 | # | Aşama | Ağırlık | Durum | Tamamlanma |
 |---|---|---|---|---|
@@ -250,8 +295,10 @@ açılarak ΔE 17.5'e çıkarıldı → `#178a48 / #ffc94d / #f76b6b`
 
 | # | Sorun | Etki | Ne zaman |
 |---|---|---|---|
-| 0 | **Harita görsel olarak doğrulanmadı** | Aşama 5'e geçmeden önce bilinmeli | **Sıradaki iş — senin bakman gerekiyor** |
-| 1 | `gh` CLI token'ı geçersiz | PR'ları ben açamıyorum, sen açıyorsun | `gh auth login` çalıştırınca çözülür |
+| 1 | Demo hesap parolaları giriş ekranında görünüyor | Staj projesi olduğu için **bilerek** | ✅ README'de belirtildi |
+| 2 | Token `localStorage`'da tutuluyor | XSS'e karşı korumasız; HttpOnly cookie daha güvenli | ✅ Bilinçli ödün, README + kodda belgelendi |
+| 3 | `SECRET_KEY` varsayılanı kodda | Üretimde `.env`'den gelmeli | ✅ `.env.example`'a uyarıyla eklendi |
+| 4 | CI kurulmadı | 53 test elle çalıştırılıyor | İsteğe bağlı (C3) |
 | 2 | GitHub varsayılan dalı `feature/01-docker-db` | PR'lar yanlış dala açılıyor | **Senin yapman lazım** — aşağıda |
 | 3 | `feature/01-docker-db` ve `feature/02-backend-api` dalları uzakta duruyor | Karışıklık | Merge sonrası GitHub'dan silinebilir |
 | 4 | Frontend henüz Docker'da değil | `npm run dev` ayrı çalıştırılıyor | Aşama 6 |

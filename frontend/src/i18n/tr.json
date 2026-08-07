@@ -138,6 +138,13 @@
     "exportGeojson": "GeoJSON indir",
     "share": "pay"
   },
+  "nearby": {
+    "title": "Yakınımdakiler",
+    "search": "Konumumu bul ve ara",
+    "onlyProblems": "Sadece bakım bekleyen / arızalı",
+    "found": "{{count}} varlık bulundu",
+    "noResult": "Bu yarıçapta varlık yok"
+  },
   "spatial": {
     "drawTitle": "Alan sorgusu",
     "drawHint": "Haritada bir alan çiz, içine düşen varlıkları listeleyeyim",
@@ -200,5 +207,10 @@
   "common": {
     "loading": "Yükleniyor...",
     "close": "Kapat"
+  },
+  "notFound": {
+    "title": "Sayfa bulunamadı",
+    "description": "Aradığın adres yok. Bağlantı eski olabilir veya adresi yanlış yazmış olabilirsin.",
+    "backToMap": "Haritaya dön"
   }
 }

@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.deps import CurrentUser
+from app.core.limiter import limiter
 from app.core.security import parola_dogrula, token_uret
 from app.models.user import User
 from app.schemas.user import Token, UserOut
@@ -36,10 +37,20 @@ DbSession = Annotated[Session, Depends(get_db)]
         "deneyebilirsin.\n\n"
         "Demo hesapları:\n"
         "- `admin` / `admin123` — yönetici (silebilir)\n"
-        "- `saha` / `saha123` — saha ekibi (silemez)"
+        "- `saha` / `saha123` — saha ekibi (silemez)\n\n"
+        "⚠️ Dakikada en fazla **10 deneme** yapılabilir; aşılırsa `429` döner."
     ),
 )
-def login(form: Annotated[OAuth2PasswordRequestForm, Depends()], db: DbSession) -> Token:
+# Kaba kuvvet koruması: sınırsız deneme hakkı, zayıf bir parolanın er geç
+# bulunması demektir. Sayaç BAŞARISIZ/başarılı ayrımı yapmadan çalışır —
+# saldırgan da meşru kullanıcı da aynı kapıdan geçer.
+# Not: `request` parametresi slowapi için zorunlu; onsuz decorator çalışmaz.
+@limiter.limit("10/minute")
+def login(
+    request: Request,
+    form: Annotated[OAuth2PasswordRequestForm, Depends()],
+    db: DbSession,
+) -> Token:
     kullanici = db.scalar(select(User).where(User.username == form.username))
 
     # DİKKAT: "kullanıcı yok" ile "parola yanlış" AYNI mesajı döner.

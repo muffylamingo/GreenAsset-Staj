@@ -71,8 +71,11 @@ services:
     container_name: greenasset-backend
     restart: unless-stopped
     environment:
+      ENVIRONMENT: ${ENVIRONMENT:-development}
       DATABASE_URL: ${DATABASE_URL}
       CORS_ORIGINS: ${CORS_ORIGINS}
+      SECRET_KEY: ${SECRET_KEY}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-720}
     ports:
       - "${BACKEND_PORT:-8000}:8000"
     volumes:
@@ -83,13 +86,44 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    # Migration'lar açılışta otomatik uygulanıyor.
+    # Bu olmadan sıfırdan kurulumda hiç tablo oluşmaz ve "tek komutla
+    # çalışsın" iddiası bozulur. Alembic zaten uygulanmış migration'ları
+    # atlıyor, yani her açılışta güvenle çalışabilir.
+    command: >
+      sh -c "alembic upgrade head &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+    # Frontend, backend hazır olmadan başlamasın diye sağlık kontrolü
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
     networks:
       - greenasset-net
 
   # ----------------------------------------------------------
-  # 4) FRONTEND — Aşama 6'da eklenecek (şimdilik "npm run dev")
+  # 4) FRONTEND — React derlemesi, Nginx ile servis
+  #    http://localhost:3000
+  #
+  #    Geliştirirken bunu kullanmıyoruz (`npm run dev` daha hızlı,
+  #    anlık yenileme var). Bu servis "tek komutla ayağa kalksın"
+  #    içindir: değerlendiren kişi npm kurmadan projeyi çalıştırır.
   # ----------------------------------------------------------
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: greenasset-frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-3000}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - greenasset-net
 
 volumes:
   postgres_data:

@@ -40,7 +40,7 @@ CSV_BASLIKLARI = [
 ]
 
 
-def _parse_bbox(bbox: str | None):  # noqa: ANN202
+def _parse_bbox(bbox: str | None):
     if not bbox:
         return None
     parcalar = bbox.split(",")
@@ -70,10 +70,10 @@ def _parse_bbox(bbox: str | None):  # noqa: ANN202
 )
 def export_assets(
     db: DbSession,
-    format: Annotated[  # noqa: A002 — API sözleşmesinde bu ad bekleniyor
+    format: Annotated[
         Literal["csv", "geojson"], Query(description="Dosya biçimi")
     ] = "csv",
-    type: Annotated[list[AssetType] | None, Query()] = None,  # noqa: A002
+    type: Annotated[list[AssetType] | None, Query()] = None,
     status_filter: Annotated[list[AssetStatus] | None, Query(alias="status")] = None,
     district_id: Annotated[int | None, Query()] = None,
     q: Annotated[str | None, Query()] = None,

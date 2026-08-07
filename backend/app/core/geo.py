@@ -26,7 +26,7 @@ def point_ewkt(latitude: float, longitude: float) -> str:
     return f"SRID=4326;POINT({longitude} {latitude})"
 
 
-def to_lat_lon(geometry) -> tuple[float, float]:  # noqa: ANN001
+def to_lat_lon(geometry) -> tuple[float, float]:
     """PostGIS geometrisinden (enlem, boylam) ikilisini çıkarır.
 
     to_shape → geoalchemy2 geometrisini shapely nesnesine çevirir.
@@ -36,7 +36,7 @@ def to_lat_lon(geometry) -> tuple[float, float]:  # noqa: ANN001
     return point.y, point.x
 
 
-def to_lon_lat(geometry) -> tuple[float, float]:  # noqa: ANN001
+def to_lon_lat(geometry) -> tuple[float, float]:
     """GeoJSON için (boylam, enlem) ikilisi — coordinates alanının beklediği sıra."""
     point = to_shape(geometry)
     return point.x, point.y

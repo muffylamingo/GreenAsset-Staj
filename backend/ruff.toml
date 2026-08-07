@@ -1,0 +1,62 @@
+# ============================================================
+#  Ruff — Python lint ve format ayarları
+#
+#  Neden ayar dosyası? Ruff'ın varsayılanı çok geniş ve bir kısmı bu
+#  projede anlamsız uyarı üretiyordu (52 uyarının hepsi Windows'ta dosya
+#  izinlerinden kaynaklanan sahte bulgulardı). Gürültülü bir lint,
+#  kapatılan lint demektir — kimse 78 uyarıyı okumaz, hepsini görmezden
+#  gelir ve içindeki 1 gerçek hata da kaybolur.
+#
+#  Bu yüzden kurallar AÇIKÇA seçildi.
+# ============================================================
+
+line-length = 100
+target-version = "py312"
+
+# seed_data, container'a salt okunur bağlanan `db/seed/` klasörüdür —
+# backend'in kendi kaynak kodu değil, sadece bir kopyası. Gerçek dosya
+# depoda `db/seed/` altında duruyor.
+exclude = ["seed_data"]
+
+[lint]
+select = [
+    "E",    # pycodestyle hataları
+    "F",    # pyflakes — kullanılmayan import/değişken, tanımsız isim
+    "I",    # isort — import sıralaması
+    "B",    # flake8-bugbear — sık yapılan mantık hataları
+    "UP",   # pyupgrade — eski Python kalıpları
+    "RUF",  # ruff'a özel kurallar
+]
+
+ignore = [
+    # Satır uzunluğunu formatter zaten yönetiyor; ayrıca Türkçe açıklama
+    # satırlarında birkaç karakter taşması okunabilirliği bozmuyor.
+    "E501",
+    # `zip(..., strict=)` zorunluluğu — bu projede zip kullanımı yok denecek
+    # kadar az ve hepsi eşit uzunlukta dizilerle.
+    "B905",
+
+    # "Belirsiz Unicode karakter" uyarıları. Bu kural, ASCII benzerlerine
+    # benzeyen karakterleri (Kiril 'а' vs Latin 'a' gibi) yakalamak için var —
+    # gerçek bir saldırı yöntemine karşı. Ama bu projede bütün açıklamalar
+    # Türkçe: ı, ş, ğ, İ ve — karakterleri 1676 sahte uyarı üretti.
+    # Gürültü, gerçek bulguları görünmez yapar.
+    "RUF001", "RUF002", "RUF003",
+
+    # `class X(str, Enum)` yerine `StrEnum` öneriyor. Doğru bir öneri ama
+    # SQLAlchemy'nin Enum tipi ve `values_callable` ile etkileşimi ayrıca
+    # doğrulanmalı; çalışan şemayı lint uyarısı için değiştirmiyoruz.
+    "UP042",
+]
+
+[lint.per-file-ignores]
+# Testlerde `assert` kullanmak zaten testin kendisidir.
+# Fixture'lar "kullanılmıyor" görünür ama pytest onları isimle enjekte eder.
+"tests/*" = ["F811", "F401"]
+
+# Alembic migration'ları şablondan üretiliyor; import düzenini
+# Alembic'in kendi şablonu belirliyor.
+"alembic/versions/*" = ["I001", "E402"]
+
+[format]
+quote-style = "double"
