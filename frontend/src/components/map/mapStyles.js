@@ -38,8 +38,14 @@ export const CIZIM_RENGI = (koyu) => (koyu ? '#6bd8cb' : '#006a61')
  * üst üste biner. Zaten o ölçekte sorulan soru "sorunlar nerede yoğunlaşıyor",
  * cevabı renk veriyor. Sokak ölçeğine inince soru değişiyor: "bu şey ne?" —
  * o zaman ikon anlam kazanıyor.
+ *
+ * Neden 15 değil 14? Eşik 15 iken kullanıcı "yakınlaştım ama ikon yok"
+ * diyordu — çünkü mahalle ölçeği zoom 14-15 arasına düşüyor ve tam eşiğin
+ * üstünde kalınca ikonlar bir görünüp bir kayboluyordu. Bir özelliğin
+ * "bazen çalışması", hiç çalışmamasından daha kötüdür: kullanıcı bozuk
+ * olduğunu düşünür. Eşiği bir kademe indirmek bu belirsizliği kaldırıyor.
  */
-export const IKON_MIN_ZOOM = 15
+export const IKON_MIN_ZOOM = 14
 
 /** Harita ikonlarının kayıt adı — çakışmasın diye önek kullanıyoruz. */
 export const ikonAdi = (tip) => `varlik-${tip}`
