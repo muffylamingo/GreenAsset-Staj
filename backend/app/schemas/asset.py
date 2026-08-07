@@ -154,6 +154,6 @@ class AssetFeatureCollection(BaseModel):
 
     type: Literal["FeatureCollection"] = "FeatureCollection"
     features: list[AssetFeature]
-    totalCount: int = Field(  # noqa: N815 — GeoJSON tarafında camelCase yaygın
+    totalCount: int = Field(
         description="Filtreye uyan toplam kayıt sayısı (sayfalamadan bağımsız)"
     )

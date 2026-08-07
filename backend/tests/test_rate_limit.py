@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import pytest
 
-from app.core.limiter import limiter, istemci_adresi
+from app.core.limiter import istemci_adresi, limiter
 
 
 @pytest.fixture

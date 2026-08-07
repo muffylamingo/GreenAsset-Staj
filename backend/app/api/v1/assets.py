@@ -127,7 +127,7 @@ def list_assets(
         Literal["name", "type", "status", "created_at", "updated_at"], Query()
     ] = "created_at",
     sort_dir: Annotated[Literal["asc", "desc"], Query()] = "desc",
-    format: Annotated[  # noqa: A002 — API sözleşmesinde 'format' adı bekleniyor
+    format: Annotated[
         Literal["geojson", "json"], Query(description="Çıktı biçimi")
     ] = "geojson",
 ):
@@ -219,7 +219,7 @@ def bulk_delete(
 # ---------------------------------------------------------------------------
 # Tekil kayıt işlemleri
 # ---------------------------------------------------------------------------
-def _get_or_404(db: Session, asset_id: uuid.UUID):  # noqa: ANN202
+def _get_or_404(db: Session, asset_id: uuid.UUID):
     asset = crud.get_asset(db, asset_id)
     if asset is None:
         raise HTTPException(status_code=404, detail="Varlık bulunamadı")

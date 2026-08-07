@@ -9,14 +9,13 @@ Buradaki iki püf nokta çok önemli:
 
 from logging.config import fileConfig
 
-from alembic import context
 from sqlalchemy import engine_from_config, pool
-
-from app.core.config import settings
-from app.core.database import Base
 
 # Tüm modeller import edilmeli ki Base.metadata dolsun
 import app.models  # noqa: F401
+from alembic import context
+from app.core.config import settings
+from app.core.database import Base
 
 config = context.config
 config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
@@ -38,7 +37,7 @@ POSTGIS_TABLES = {
 }
 
 
-def include_object(object, name, type_, reflected, compare_to):  # noqa: A002, ANN001
+def include_object(object, name, type_, reflected, compare_to):
     """Autogenerate'in hangi nesneleri dikkate alacağını belirler."""
     if type_ == "table" and name in POSTGIS_TABLES:
         return False

@@ -80,7 +80,7 @@ def health():
             conn.execute(text("SELECT 1"))
             postgis_version = conn.execute(text("SELECT PostGIS_Version()")).scalar()
             db_ok = True
-    except Exception as exc:  # noqa: BLE001 — health ucu asla patlamamalı
+    except Exception as exc:
         postgis_version = f"hata: {exc.__class__.__name__}"
 
     return {

@@ -36,9 +36,6 @@ import {
   KUME_YARICAPI,
 } from './mapStyles'
 
-/** Boş bir GeoJSON — kaynaklar veri gelmeden önce bununla kuruluyor. */
-const BOS_KOLEKSIYON = { type: 'FeatureCollection', features: [] }
-
 /**
  * SVG metnini haritanın kullanabileceği piksel verisine çevirir.
  *

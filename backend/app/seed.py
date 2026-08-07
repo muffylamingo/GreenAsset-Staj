@@ -69,7 +69,7 @@ PILOT_WEIGHT = 3.0
 BASE_WEIGHT = 1.0
 
 
-def load_districts(db) -> int:  # noqa: ANN001
+def load_districts(db) -> int:
     """İlçe sınırlarını GeoJSON dosyasından veritabanına yükler."""
     if not GEOJSON_PATH.exists():
         raise FileNotFoundError(
@@ -111,7 +111,7 @@ def load_districts(db) -> int:  # noqa: ANN001
     return inserted
 
 
-def generate_assets(db, total: int) -> int:  # noqa: ANN001
+def generate_assets(db, total: int) -> int:
     """Her ilçenin içine rastgele varlık üretir.
 
     Dağılım kentsel yoğunluğa göre: pilot bölgeler 3 kat daha yoğun.
@@ -190,7 +190,7 @@ BAKIM_NOTLARI = [
 BAKIM_EKIPLERI = ["Saha Ekibi 1", "Saha Ekibi 2", "Saha Ekibi 3", "Park Bakım", "Elektrik Ekibi"]
 
 
-def generate_maintenance_logs(db, oran: float = 0.35) -> int:  # noqa: ANN001
+def generate_maintenance_logs(db, oran: float = 0.35) -> int:
     """Varlıkların bir kısmına geçmiş bakım kayıtları üretir.
 
     Neden hepsine değil? Gerçek hayatta da her varlığın bakım kaydı yoktur;
@@ -225,7 +225,7 @@ def generate_maintenance_logs(db, oran: float = 0.35) -> int:  # noqa: ANN001
     return uretilen
 
 
-def reset(db) -> None:  # noqa: ANN001
+def reset(db) -> None:
     """Tüm demo verisini siler."""
     # maintenance_logs, assets'e CASCADE bağlı — TRUNCATE ... CASCADE onu da temizler
     db.execute(text("TRUNCATE TABLE maintenance_logs"))
