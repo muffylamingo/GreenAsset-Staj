@@ -91,7 +91,7 @@ framework ile değiştirsek CRUD katmanı aynen kalır.
 
 | Katman | Teknoloji |
 |---|---|
-| Frontend | React 19 · Vite · Tailwind CSS v4 · MapLibre GL JS v5 |
+| Frontend | React 19 · Vite · React Router · Tailwind CSS v4 · MapLibre GL JS v5 |
 | Form / veri | React Hook Form · Zod · TanStack Query · Axios |
 | Grafik | Recharts |
 | Çoklu dil | react-i18next (TR / EN) |
@@ -136,6 +136,8 @@ framework ile değiştirsek CRUD katmanı aynen kalır.
   - **Virgüllü ondalık desteği**: `41,105` → `41.105` (Türkçe klavye)
 - Sıralanabilir tablo, filtre chip'leri, toplu seçim, sayfalama
 - Onay modalı, toast bildirimleri, boş/yükleniyor/hata ekranları
+- **URL yönlendirmesi**: `/harita`, `/varliklar`, `/panel` — yenileme aynı
+  sayfada kalır, bağlantı paylaşılabilir, bilinmeyen adres için 404 sayfası
 </details>
 
 <details>

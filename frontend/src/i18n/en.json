@@ -207,5 +207,10 @@
   "common": {
     "loading": "Loading...",
     "close": "Close"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "description": "This address doesn't exist. The link may be outdated or mistyped.",
+    "backToMap": "Back to map"
   }
 }

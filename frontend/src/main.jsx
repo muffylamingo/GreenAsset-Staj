@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import { BrowserRouter } from 'react-router-dom'
 
 // Arayüz fontu: Plus Jakarta Sans — geometrik, modern, küçük boyutta okunaklı.
 // Hepsi npm paketinden self-host ediliyor, Google Fonts CDN'e bağımlı değiliz.
@@ -43,9 +44,15 @@ createRoot(document.getElementById('root')).render(
         anlaşılır bir hata ekranı görünsün. */}
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <App />
-        </AuthProvider>
+        {/* BrowserRouter: adres çubuğu ile uygulama durumunu bağlar.
+            Nginx tarafında `try_files ... /index.html` kuralı bunun eşidir —
+            sunucu bulamadığı yolu uygulamaya devrediyor, yönlendirmeyi
+            React yapıyor. */}
+        <BrowserRouter>
+          <AuthProvider>
+            <App />
+          </AuthProvider>
+        </BrowserRouter>
       </QueryClientProvider>
     </ErrorBoundary>
   </StrictMode>,

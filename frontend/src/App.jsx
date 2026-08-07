@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react'
 import toast, { Toaster } from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
+import { NavLink, Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 
 import { getAsset } from './api/assets'
 import { useAuth } from './auth/AuthContext'
@@ -10,6 +11,7 @@ import AssetTable from './components/assets/AssetTable'
 import DashboardPage from './components/dashboard/DashboardPage'
 import MapPage from './components/map/MapPage'
 import Icon from './components/ui/Icon'
+import NotFound from './components/ui/NotFound'
 import { useTheme } from './hooks/useTheme'
 import { dilDegistir } from './i18n'
 
@@ -24,18 +26,21 @@ import { dilDegistir } from './i18n'
 // olduğu için tıklanamıyordu. Çalışmayan bir düğme, olmayan bir düğmeden
 // kötüdür: kullanıcı bozuk sanır. Analiz zaten Gösterge Paneli'nde;
 // gerçekten ayrı bir rapor ekranı gerekirse o zaman eklenir.
+//
+// Yollar sabit ve Türkçe: arayüz dili değişse de adres değişmez, yoksa
+// paylaşılan bir bağlantı dil değiştiğinde kırılırdı.
 const MENU = [
-  { anahtar: 'dashboard', icon: 'dashboard', hazir: true },
-  { anahtar: 'map', icon: 'map', hazir: true },
-  { anahtar: 'assets', icon: 'inventory_2', hazir: true },
+  { anahtar: 'dashboard', icon: 'dashboard', yol: '/panel' },
+  { anahtar: 'map', icon: 'map', yol: '/harita' },
+  { anahtar: 'assets', icon: 'inventory_2', yol: '/varliklar' },
 ]
 
 export default function App() {
   const { t, i18n } = useTranslation()
   const { koyu, temaDegistir } = useTheme()
   const { kullanici, yukleniyor, cikisYap, yonetici } = useAuth()
+  const navigate = useNavigate()
 
-  const [aktifSayfa, setAktifSayfa] = useState('map')
   const [panelAcik, setPanelAcik] = useState(false)
   const [duzenlenen, setDuzenlenen] = useState(null)
   // Haritadan gelen koordinat — forma aktarılacak
@@ -115,27 +120,28 @@ export default function App() {
         </div>
 
         <div className="flex w-full flex-col">
-          {MENU.map(({ anahtar, icon, hazir }) => {
-            const aktif = aktifSayfa === anahtar
-            return (
-              <button
-                key={anahtar}
-                onClick={() => hazir && setAktifSayfa(anahtar)}
-                disabled={!hazir}
-                title={hazir ? t(`nav.${anahtar}`) : `${t(`nav.${anahtar}`)} — yakında`}
-                aria-current={aktif ? 'page' : undefined}
-                className={`relative flex w-full justify-center py-4 transition-colors ${
-                  aktif
+          {/* NavLink: aktif durumu kendisi hesaplıyor ve gerçek bir <a>
+              üretiyor — orta tıkla yeni sekmede açılabiliyor, sağ tık
+              menüsünde "bağlantıyı kopyala" çalışıyor. <button> ile bunların
+              hiçbiri olmazdı. */}
+          {MENU.map(({ anahtar, icon, yol }) => (
+            <NavLink
+              key={anahtar}
+              to={yol}
+              title={t(`nav.${anahtar}`)}
+              className={({ isActive }) =>
+                `relative flex w-full justify-center py-4 transition-colors ${
+                  isActive
                     ? "text-primary before:absolute before:left-0 before:h-8 before:w-1 before:rounded-r-full before:bg-primary before:content-['']"
-                    : hazir
-                      ? 'text-on-surface-variant hover:bg-surface-container-high'
-                      : 'text-on-surface-variant/30'
-                }`}
-              >
-                <Icon name={icon} filled={aktif} className="text-[24px]" />
-              </button>
-            )
-          })}
+                    : 'text-on-surface-variant hover:bg-surface-container-high'
+                }`
+              }
+            >
+              {({ isActive }) => (
+                <Icon name={icon} filled={isActive} className="text-[24px]" />
+              )}
+            </NavLink>
+          ))}
         </div>
 
         <div className="mt-auto flex w-full flex-col">
@@ -179,29 +185,46 @@ export default function App() {
       {/* ---------- Ana içerik ---------- */}
       {/* overflow-hidden: kaydırmayı sayfa değil, içerik kendi yapsın */}
       <main className="flex-1 overflow-hidden">
-        {aktifSayfa === 'dashboard' && <DashboardPage koyu={koyu} />}
+        <Routes>
+          {/* Kök adres haritaya gitsin. `replace`: tarayıcı geçmişinde "/"
+              bırakmıyoruz, yoksa geri tuşu kullanıcıyı aynı yere geri
+              yönlendirip sonsuz döngü hissi verirdi. */}
+          <Route path="/" element={<Navigate to="/harita" replace />} />
 
-        {aktifSayfa === 'map' && (
-          <MapPage
-            koyu={koyu}
-            onMapClick={haritayaTiklandi}
-            onFeatureClick={varligaTiklandi}
-            seciliId={seciliId}
-            ucKoordinat={ucKoordinat}
-          />
-        )}
+          <Route path="/panel" element={<DashboardPage koyu={koyu} />} />
 
-        {aktifSayfa === 'assets' && (
-          <AssetTable
-            onAdd={() => panelAc()}
-            onEdit={(asset) => panelAc(asset)}
-            onShowOnMap={(asset) => {
-              setSeciliId(asset.id)
-              setUcKoordinat({ lat: asset.latitude, lon: asset.longitude })
-              setAktifSayfa('map')
-            }}
+          <Route
+            path="/harita"
+            element={
+              <MapPage
+                koyu={koyu}
+                onMapClick={haritayaTiklandi}
+                onFeatureClick={varligaTiklandi}
+                seciliId={seciliId}
+                ucKoordinat={ucKoordinat}
+              />
+            }
           />
-        )}
+
+          <Route
+            path="/varliklar"
+            element={
+              <AssetTable
+                onAdd={() => panelAc()}
+                onEdit={(asset) => panelAc(asset)}
+                onShowOnMap={(asset) => {
+                  setSeciliId(asset.id)
+                  setUcKoordinat({ lat: asset.latitude, lon: asset.longitude })
+                  navigate('/harita')
+                }}
+              />
+            }
+          />
+
+          {/* Karşılığı olmayan her adres. Bu olmadan kullanıcı bomboş bir
+              ekran görür ve uygulamanın bozulduğunu sanar. */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
       </main>
 
       {/* ---------- Sağ panel ---------- */}

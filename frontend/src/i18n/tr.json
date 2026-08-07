@@ -207,5 +207,10 @@
   "common": {
     "loading": "Yükleniyor...",
     "close": "Kapat"
+  },
+  "notFound": {
+    "title": "Sayfa bulunamadı",
+    "description": "Aradığın adres yok. Bağlantı eski olabilir veya adresi yanlış yazmış olabilirsin.",
+    "backToMap": "Haritaya dön"
   }
 }

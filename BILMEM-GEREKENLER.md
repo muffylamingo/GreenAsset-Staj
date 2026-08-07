@@ -689,6 +689,9 @@ Aşağıdakiler teorik değil — hepsi bu projede başımıza geldi ve saatler 
 | Rate limit herkesi birden kilitliyor | Proxy arkasında `remote_addr` hep Nginx'in IP'si → tüm kullanıcılar tek sayaçta | `X-Forwarded-For`'un **son** parçasını kullan (baştakiler taklit edilebilir) |
 | Denetim kaydı silinen varlıkla birlikte kayboluyor | `entity_id` ForeignKey yapılmıştı; CASCADE izi de sildi | Denetim tablosunda kimlik alanı FK **olmamalı** — iz, izlediği kayıttan bağımsız yaşar |
 | `alembic --autogenerate` alakasız değişiklikler üretiyor | Aynı kuralın iki farklı yazımını (unique constraint ↔ unique index) fark sanıyor | Üretilen migration'ı **her zaman** elden geçir, gereksiz satırları sil |
+| `localhost:3000/docs` Swagger yerine uygulamayı açıyor | `/docs` diye dosya yok; SPA kuralı bulunamayan her yolu `index.html`'e devrediyor — sayfa "çalışıyor" ama yanlış şeyi gösteriyor | Nginx'te `/docs`, `/redoc`, `/openapi.json` yollarını backend'e proxy'le |
+| Swagger sayfası açılıyor ama arayüz hiç çizilmiyor | Swagger dosyalarını CDN'den yüklüyor, CSP `script-src 'self'` engelliyor | Ana CSP'yi gevşetme; **sadece o yola özel** CSP yaz |
+| Lint 1700 uyarı veriyor | RUF001/002/003 Türkçe karakterleri (ı, ş, ğ, —) "belirsiz Unicode" sayıyor | Kuralları açıkça seç; gürültülü lint, kapatılan lint demektir |
 
 ---
 
